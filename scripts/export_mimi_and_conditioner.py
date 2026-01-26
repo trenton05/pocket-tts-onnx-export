@@ -334,7 +334,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         input_names=["audio"],
         output_names=["latents"],
         dynamic_shapes={"audio": {2: "audio_len"}},
-        opset_version=17,
+        opset_version=18,
         dynamo=True,
         external_data=False
     )
@@ -379,7 +379,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         input_names=mimi_input_names,
         output_names=mimi_output_names,
         dynamic_axes=mimi_dynamic_axes,
-        opset_version=17,
+        opset_version=18,
         dynamo=False
     )
     print(f"Mimi exported to {mimi_onnx_path}")

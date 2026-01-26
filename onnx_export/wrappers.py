@@ -14,13 +14,13 @@ class MimiWrapper(nn.Module):
     def forward(self, latent, flat_state):
         try:
             # Un-normalize latent: scale and shift back
-            mimi_decoding_input = latent * self.emb_std + self.emb_mean
+            # mimi_decoding_input = latent * self.emb_std + self.emb_mean
             
             # Transpose: [B, T, D] -> [B, D, T]
-            transposed = mimi_decoding_input.transpose(-1, -2)
+            transposed = latent.transpose(-1, -2)
             
             # Project: [B, dim, 1]
-            quantized = self.mimi.quantizer(transposed)
+            quantized = self.mimi.quantizer.decode(transposed)
             
             model_state, _ = unflatten_state(flat_state, self.state_structure)
             
