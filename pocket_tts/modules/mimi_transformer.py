@@ -192,57 +192,6 @@ class StreamingTransformerLayer(nn.Module):
         x = self._ff_block(x)
         return x
 
-
-class StreamingTransformer(nn.Module):
-    def __init__(
-        self,
-        d_model: int,
-        num_heads: int,
-        num_layers: int,
-        layer_scale: float | None = None,
-        dim_feedforward: int | list[int] = 2048,
-        context: int | None = None,
-        max_period: float = 10_000.0,
-        kind: str = "mimi",
-    ):
-        super().__init__()
-        assert d_model % num_heads == 0
-        self.max_period = max_period
-
-        self.rope = RotaryEmbedding(max_period=max_period)
-
-        self.layers = nn.ModuleList()
-        for _ in range(num_layers):
-            self.layers.append(
-                StreamingTransformerLayer(
-                    d_model=d_model,
-                    num_heads=num_heads,
-                    dim_feedforward=dim_feedforward,
-                    context=context,
-                    rope=self.rope,
-                    layer_scale=layer_scale,
-                    attention_kind=kind,
-                )
-            )
-
-    @classmethod
-    def from_pydantic_config(cls, config: FlowLMTransformerConfig) -> Self:
-        dim_feedforward = int(config.d_model * config.hidden_scale)
-        return cls(
-            d_model=config.d_model,
-            num_heads=config.num_heads,
-            num_layers=config.num_layers,
-            dim_feedforward=dim_feedforward,
-            max_period=float(config.max_period),
-            kind="flow_lm",
-        )
-
-    def forward(self, x: torch.Tensor, model_state: dict | None):
-        for layer in self.layers:
-            x = layer(x, model_state)
-        return x
-
-
 class ProjectedTransformer(nn.Module):
     def __init__(
         self,
@@ -279,14 +228,35 @@ class ProjectedTransformer(nn.Module):
             else:
                 self.output_projs.append(nn.Linear(d_model, output_dimension, bias=False))
 
+        self.max_period = max_period
+
+        self.rope = RotaryEmbedding(max_period=max_period)
+
+        self.layers = nn.ModuleList()
+        for _ in range(num_layers):
+            self.layers.append(
+                StreamingTransformerLayer(
+                    d_model=d_model,
+                    num_heads=num_heads,
+                    dim_feedforward=dim_feedforward,
+                    context=context,
+                    rope=self.rope,
+                    layer_scale=layer_scale,
+                    attention_kind=kind,
+                )
+            )
+
     def forward(self, x, model_state: dict | None):
         x = x.transpose(1, 2)
         if self.input_proj is not None:
             x = self.input_proj(x)
-        z = self.transformer(x, model_state)
+
+        for layer in self.layers:
+            x = layer(x, model_state)
+            
         ys = []
         for output_proj in self.output_projs:
-            y = output_proj(z)
+            y = output_proj(x)
             y = y.transpose(1, 2)
             ys.append(y)
         return ys
