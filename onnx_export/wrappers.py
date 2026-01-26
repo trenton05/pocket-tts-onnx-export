@@ -17,7 +17,7 @@ class MimiWrapper(nn.Module):
             # mimi_decoding_input = latent * self.emb_std + self.emb_mean
             
             # Transpose: [B, T, D] -> [B, D, T]
-            transposed = latent.transpose(-1, -2)
+            transposed = latent # latent.transpose(-1, -2)
             
             # Project: [B, dim, 1]
             quantized = self.mimi.quantizer.decode(transposed)
@@ -59,7 +59,7 @@ class MimiEncoderWrapper(nn.Module):
         # audio: [B, C, T] -> latent: [B, T', D]
         encoded = self.mimi.encode_to_latent(audio)
         # encoded is [B, D, T'], we need [B, T', D]
-        latents = encoded.transpose(-1, -2)
+        latents = encoded # encoded.transpose(-1, -2)
         
         # Apply speaker projection if available
         if self.speaker_proj_weight is not None:
