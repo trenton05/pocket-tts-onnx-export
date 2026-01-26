@@ -69,14 +69,14 @@ class SEANetEncoder(nn.Module):
         self.n_blocks = len(self.ratios) + 2  # first and last conv + residual blocks
 
         mult = 1
-        model = nn.ModuleList(
+        layers = nn.ModuleList(
             [StreamingConv1d(channels, mult * n_filters, kernel_size, pad_mode=pad_mode)]
         )
         # Downsample to raw audio scale
         for i, ratio in enumerate(self.ratios):
             # Add residual layers
             for j in range(n_residual_layers):
-                model += [
+                layers += [
                     SEANetResnetBlock(
                         mult * n_filters,
                         kernel_sizes=[residual_kernel_size, 1],
@@ -87,7 +87,7 @@ class SEANetEncoder(nn.Module):
                 ]
 
             # Add downsampling layers
-            model += [
+            layers += [
                 nn.ELU(alpha=1.0),
                 StreamingConv1d(
                     mult * n_filters,
@@ -99,15 +99,15 @@ class SEANetEncoder(nn.Module):
             ]
             mult *= 2
 
-        model += [
+        layers += [
             nn.ELU(alpha=1.0),
             StreamingConv1d(mult * n_filters, dimension, last_kernel_size, pad_mode=pad_mode),
         ]
 
-        self.model = model
+        self.layers = layers
 
     def forward(self, x, model_state: dict | None):
-        for layer in self.model:
+        for layer in self.layers:
             if isinstance(layer, (StreamingConv1d, SEANetResnetBlock)):
                 x = layer(x, model_state)
             else:
@@ -140,13 +140,13 @@ class SEANetDecoder(nn.Module):
         self.hop_length = int(np.prod(self.ratios))
         self.n_blocks = len(self.ratios) + 2  # first and last conv + residual blocks
         mult = int(2 ** len(self.ratios))
-        model = nn.ModuleList(
+        layers = nn.ModuleList(
             [StreamingConv1d(dimension, mult * n_filters, kernel_size, pad_mode=pad_mode)]
         )
         # Upsample to raw audio scale
         for _, ratio in enumerate(self.ratios):
             # Add upsampling layers
-            model += [
+            layers += [
                 nn.ELU(alpha=1.0),
                 StreamingConvTranspose1d(
                     mult * n_filters, mult * n_filters // 2, kernel_size=ratio * 2, stride=ratio
@@ -154,7 +154,7 @@ class SEANetDecoder(nn.Module):
             ]
             # Add residual layers
             for j in range(n_residual_layers):
-                model += [
+                layers += [
                     SEANetResnetBlock(
                         mult * n_filters // 2,
                         kernel_sizes=[residual_kernel_size, 1],
@@ -167,14 +167,14 @@ class SEANetDecoder(nn.Module):
             mult //= 2
 
         # Add final layers
-        model += [
+        layers += [
             nn.ELU(alpha=1.0),
             StreamingConv1d(n_filters, channels, last_kernel_size, pad_mode=pad_mode),
         ]
-        self.model = model
+        self.layers = layers
 
     def forward(self, z, model_state: dict | None):
-        for layer in self.model:
+        for layer in self.layers:
             if isinstance(layer, (StreamingConvTranspose1d, SEANetResnetBlock, StreamingConv1d)):
                 z = layer(z, model_state)
             else:
