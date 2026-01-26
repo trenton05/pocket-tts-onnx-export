@@ -109,8 +109,9 @@ class MimiStreamingMultiheadAttention(StatefulModule):
         q = self.q_proj(query)
         k = self.k_proj(query)
         v = self.v_proj(query)
+        projected = torch.stack([q, k, v], dim=2)
 
-        q, k, v = rearrange(torch.stack([q, k, v], dim=2), "b t p (h d) -> p b h t d", p=3, h=self.num_heads)
+        q, k, v = rearrange(projected, "b t (p h d) -> p b h t d", p=3, h=self.num_heads)
 
         # Permute from [b, h, t, d] to [b, t, h, d] for rope
         q = q.permute(0, 2, 1, 3)

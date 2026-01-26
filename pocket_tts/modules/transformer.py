@@ -58,22 +58,24 @@ class StreamingMultiheadAttention(StatefulModule):
         kv_dim = (embed_dim // num_heads) * num_kv
         out_dim += 2 * kv_dim
         mult = 1
-        self.in_proj = nn.Linear(embed_dim, mult * out_dim, bias=False)
-        self.out_proj = nn.Linear(embed_dim, mult * embed_dim, bias=False)
+        self.q_proj = nn.Linear(embed_dim, mult * out_dim, bias=False)
+        self.k_proj = nn.Linear(embed_dim, mult * out_dim, bias=False)
+        self.v_proj = nn.Linear(embed_dim, mult * out_dim, bias=False)
+        self.o_proj = nn.Linear(embed_dim, mult * embed_dim, bias=False)
 
     def _get_mask(self, shape: tuple[int, int], shift: int, device: torch.device) -> torch.Tensor:
         return _materialize_causal_mask(shape, shift=shift, device=device)
 
     def init_state(self, batch_size: int, sequence_length: int) -> dict[str, torch.Tensor]:
         dim_per_head = self.embed_dim // self.num_heads
-        initial_current_end = torch.zeros((0,)).to(self.in_proj.weight.device)
+        initial_current_end = torch.zeros((0,)).to(self.k_proj.weight.device)
         return dict(
             current_end=initial_current_end,
             cache=torch.full(
                 (2, batch_size, sequence_length, self.num_heads, dim_per_head),
                 float("NaN"),
-                device=self.in_proj.weight.device,
-                dtype=self.in_proj.weight.dtype,
+                device=self.k_proj.weight.device,
+                dtype=self.k_proj.weight.dtype,
             ),
         )
 
@@ -101,7 +103,11 @@ class StreamingMultiheadAttention(StatefulModule):
     def forward(self, query: torch.Tensor, model_state: dict | None):
         state = self.check_model_state(model_state)
 
-        projected = self.in_proj(query)
+        q = self.q_proj(query)
+        k = self.k_proj(query)
+        v = self.v_proj(query)
+        projected = torch.stack([q, k, v], dim=2)
+
         # Reshape from (b, t, p*h*d) to (b, t, p, h, d) where p=3, h=num_heads
         b, t, _ = projected.shape
         d = self.embed_dim // self.num_heads
@@ -121,6 +127,6 @@ class StreamingMultiheadAttention(StatefulModule):
         # Reshape from (b, t, h, d) to (b, t, h*d)
         b, t, h, d = x.shape
         x = x.reshape(b, t, h * d)
-        x = self.out_proj(x)
+        x = self.o_proj(x)
 
         return x
