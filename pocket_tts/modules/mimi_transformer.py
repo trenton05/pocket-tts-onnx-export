@@ -108,7 +108,7 @@ class MimiStreamingMultiheadAttention(StatefulModule):
         q = self.q_proj(query)
         k = self.k_proj(query)
         v = self.v_proj(query)
-        projected = torch.stack([q, k, v], dim=2)
+        projected = torch.cat([q, k, v], dim=2)
 
         q, k, v = rearrange(projected, "b t (p h d) -> p b h t d", p=3, h=self.num_heads)
 
@@ -142,8 +142,8 @@ class Mlp(nn.Module):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
-        self.fc1 = nn.Linear(in_features, hidden_features)
-        self.fc2 = nn.Linear(hidden_features, out_features)
+        self.fc1 = nn.Linear(in_features, hidden_features, bias=False)
+        self.fc2 = nn.Linear(hidden_features, out_features, bias=False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.fc1(x)
