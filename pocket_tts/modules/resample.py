@@ -35,7 +35,7 @@ class ConvTrUpsample1d(nn.Module):
 
     def __init__(self, stride: int, dimension: int):
         super().__init__()
-        self.convtr = StreamingConvTranspose1d(
+        self.conv = StreamingConvTranspose1d(
             dimension,
             dimension,
             kernel_size=2 * stride,
@@ -45,4 +45,4 @@ class ConvTrUpsample1d(nn.Module):
         )
 
     def forward(self, x: torch.Tensor, model_state: dict | None):
-        return self.convtr(x, model_state)
+        return self.conv(x, model_state)

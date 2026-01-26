@@ -131,30 +131,30 @@ class StreamingConvTranspose1d(StatefulModule):
         bias: bool = True,
     ):
         super().__init__()
-        self.convtr = nn.ConvTranspose1d(
+        self.conv = nn.ConvTranspose1d(
             in_channels, out_channels, kernel_size, stride, groups=groups, bias=bias
         )
 
     @property
     def _stride(self) -> int:
-        return self.convtr.stride[0]
+        return self.conv.stride[0]
 
     @property
     def _kernel_size(self) -> int:
-        return self.convtr.kernel_size[0]
+        return self.conv.kernel_size[0]
 
     def init_state(self, batch_size: int, sequence_length: int) -> dict[str, torch.Tensor]:
         K = self._kernel_size
         S = self._stride
-        return dict(partial=torch.zeros(batch_size, self.convtr.out_channels, K - S))
+        return dict(partial=torch.zeros(batch_size, self.conv.out_channels, K - S))
 
     def forward(self, x, mimi_state: dict):
         layer_state = self.get_state(mimi_state)["partial"]
-        y = self.convtr(x)
+        y = self.conv(x)
         PT = layer_state.shape[-1]
         if PT > 0:
             y[..., :PT] += layer_state
-            bias = self.convtr.bias
+            bias = self.conv.bias
             for_partial = y[..., -PT:]
             if bias is not None:
                 for_partial -= bias[:, None]
