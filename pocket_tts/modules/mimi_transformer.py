@@ -137,6 +137,20 @@ class MimiStreamingMultiheadAttention(StatefulModule):
         return x
 
 
+class Mlp(nn.Module):
+    def __init__(self, in_features: int, hidden_features: int | None = None, out_features: int | None = None):
+        super().__init__()
+        out_features = out_features or in_features
+        hidden_features = hidden_features or in_features
+        self.fc1 = nn.Linear(in_features, hidden_features)
+        self.fc2 = nn.Linear(hidden_features, out_features)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.fc1(x)
+        x = F.gelu(x)
+        x = self.fc2(x)
+        return x
+
 class StreamingTransformerLayer(nn.Module):
     def __init__(
         self,
@@ -164,8 +178,7 @@ class StreamingTransformerLayer(nn.Module):
         self.input_layernorm = nn.LayerNorm(d_model, eps=1e-5)
         self.post_attention_layernorm = nn.LayerNorm(d_model, eps=1e-5)
 
-        self["mlp.fc1"] = nn.Linear(d_model, dim_feedforward, bias=False)
-        self["mlp.fc2"] = nn.Linear(dim_feedforward, d_model, bias=False)
+        self.mlp = Mlp(d_model, dim_feedforward, d_model)
 
         if layer_scale is None:
             self.self_attn_layer_scale = nn.Identity()
@@ -177,7 +190,7 @@ class StreamingTransformerLayer(nn.Module):
     def _ff_block(self, x: torch.Tensor) -> torch.Tensor:
         x_orig = x
         x = self.post_attention_layernorm(x)
-        update = self["mlp.fc2"](F.gelu(self["mlp.fc1"](x)))
+        update = self.mlp(x)
         return x_orig.to(update) + self.mlp_layer_scale(update)
 
     def _sa_block(self, x: torch.Tensor, model_state: dict | None) -> torch.Tensor:
