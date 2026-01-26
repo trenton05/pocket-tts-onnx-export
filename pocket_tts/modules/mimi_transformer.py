@@ -133,7 +133,7 @@ class MimiStreamingMultiheadAttention(StatefulModule):
         x = F.scaled_dot_product_attention(q, k, v, attn_bias, dropout_p=0.0)
 
         x = rearrange(x, "b h t d -> b t (h d)")
-        x = self.out_proj(x)
+        x = self.o_proj(x)
         return x
 
 
