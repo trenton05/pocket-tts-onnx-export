@@ -74,8 +74,10 @@ class MimiStreamingMultiheadAttention(StatefulModule):
         self.num_heads = num_heads
         out_dim = 3 * embed_dim
 
-        self.out_proj = nn.Linear(embed_dim, embed_dim, bias=False)
-        self.in_proj = nn.Linear(embed_dim, out_dim, bias=False)
+        self.o_proj = nn.Linear(embed_dim, embed_dim, bias=False)
+        self.q_proj = nn.Linear(embed_dim, out_dim, bias=False)
+        self.k_proj = nn.Linear(embed_dim, out_dim, bias=False)
+        self.v_proj = nn.Linear(embed_dim, out_dim, bias=False)
 
     def init_state(self, batch_size: int, sequence_length: int) -> dict[str, torch.Tensor]:
         dim_per_head = self.embed_dim // self.num_heads
@@ -104,9 +106,11 @@ class MimiStreamingMultiheadAttention(StatefulModule):
         else:
             offset = self.get_state(model_state)["offset"]
 
-        projected = self.in_proj(query)
+        q = self.q_proj(query)
+        k = self.k_proj(query)
+        v = self.v_proj(query)
 
-        q, k, v = rearrange(projected, "b t (p h d) -> p b h t d", p=3, h=self.num_heads)
+        q, k, v = rearrange(torch.stack([q, k, v], dim=2), "b t p (h d) -> p b h t d", p=3, h=self.num_heads)
 
         # Permute from [b, h, t, d] to [b, t, h, d] for rope
         q = q.permute(0, 2, 1, 3)
