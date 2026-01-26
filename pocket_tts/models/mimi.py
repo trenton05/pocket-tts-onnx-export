@@ -3,7 +3,7 @@ import logging
 import torch
 from torch import nn
 
-from pocket_tts.modules.conv import pad_for_conv1d
+from pocket_tts.modules.conv import StreamingConv1d, StreamingConvTranspose1d, pad_for_conv1d
 from pocket_tts.modules.dummy_quantizer import MimiSplitResidualVectorQuantizer
 from pocket_tts.modules.mimi_transformer import ProjectedTransformer
 from pocket_tts.modules.resample import ConvDownsample1d, ConvTrUpsample1d
@@ -50,8 +50,25 @@ class MimiModel(nn.Module):
             assert downsample_stride == int(downsample_stride), (
                 f"Only integer strides are supported, got {downsample_stride}"
             )
-            self.downsample = ConvDownsample1d(int(downsample_stride), dimension=dimension)
-            self.upsample = ConvTrUpsample1d(int(downsample_stride), dimension=dimension)
+            self.downsample = StreamingConv1d(
+                dimension,
+                dimension,
+                kernel_size=2 * downsample_stride,
+                stride=downsample_stride,
+                groups=1,
+                bias=False,
+                pad_mode="replicate",
+            )
+            # ConvDownsample1d(int(downsample_stride), dimension=dimension)
+            self.upsample = StreamingConvTranspose1d(
+                dimension,
+                dimension,
+                kernel_size=2 * downsample_stride,
+                stride=downsample_stride,
+                groups=dimension,
+                bias=False,
+            )
+            # ConvTrUpsample1d(int(downsample_stride), dimension=dimension)
 
     @property
     def frame_size(self) -> int:
