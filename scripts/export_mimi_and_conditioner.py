@@ -276,7 +276,7 @@ def patched_convtr_forward(self, x, mimi_state: dict):
 StreamingConv1d.forward = patched_conv1d_forward
 StreamingConvTranspose1d.forward = patched_convtr_forward
 
-from onnx_export.wrappers import FlowLMWrapper, MimiWrapper, MimiEncoderWrapper, TextConditionerWrapper
+from onnx_export.wrappers import MimiWrapper, MimiEncoderWrapper, TextConditionerWrapper
 from pocket_tts.modules import conv
 import math
 def patched_get_extra_padding(x, kernel_size, stride, padding_total=0):
@@ -286,12 +286,12 @@ def patched_get_extra_padding(x, kernel_size, stride, padding_total=0):
     return ideal_length - length
 conv.get_extra_padding_for_conv1d = patched_get_extra_padding
 
-def export_models(output_dir="onnx_models", weights_path="weights/tts_b6369a24.safetensors"):
+def export_models(output_dir="onnx_models", weights_path="weights/model.safetensors"):
     os.makedirs(output_dir, exist_ok=True)
 
     print("Loading model...")
     # Load model on CPU
-    tts_model = TTSModel.load_model(DEFAULT_VARIANT)
+    tts_model = TTSModel.load_model()
 
     # Reload with local voice cloning weights (HF download may have failed)
     import safetensors.torch
@@ -299,7 +299,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/tts_b6369a24.s
         print(f"Reloading weights from {weights_path} (with voice cloning)...")
         state_dict = safetensors.torch.load_file(weights_path)
         try:
-            tts_model.load_state_dict(state_dict, strict=True)
+            tts_model.mimi.load_state_dict(state_dict, strict=True)
             tts_model.has_voice_cloning = True
         except Exception as e:
             print(f"Warning: Failed to load specified weights (strict=True): {e}")
@@ -316,7 +316,6 @@ def export_models(output_dir="onnx_models", weights_path="weights/tts_b6369a24.s
     
     mimi_encoder_wrapper = MimiEncoderWrapper(
         tts_model.mimi,
-        speaker_proj_weight=tts_model.flow_lm.speaker_proj_weight
     )
     
     # Dummy audio: 1 second at 24kHz
@@ -337,36 +336,9 @@ def export_models(output_dir="onnx_models", weights_path="weights/tts_b6369a24.s
     )
     print(f"Mimi Encoder exported to {encoder_onnx_path}")
     
-    # ---------------------------------------------------------
-    # Export Text Conditioner (tokens -> embeddings)
-    # ---------------------------------------------------------
-    print("Exporting Text Conditioner...")
-    
-    text_conditioner_wrapper = TextConditionerWrapper(tts_model.flow_lm.conditioner)
-    
-    # Dummy tokens
-    dummy_tokens = torch.randint(0, 1000, (1, 20))
-    
-    conditioner_onnx_path = os.path.join(output_dir, "text_conditioner.onnx")
-    
-    torch.onnx.export(
-        text_conditioner_wrapper,
-        (dummy_tokens,),
-        conditioner_onnx_path,
-        input_names=["token_ids"],
-        output_names=["embeddings"],
-        dynamic_shapes={"token_ids": {1: "seq_len"}},
-        opset_version=17,
-        dynamo=True,
-        external_data=False
-    )
-    print(f"Text Conditioner exported to {conditioner_onnx_path}")
-    
     # Initialize state with static size sufficient for expected usage
     # 1000 tokens covers ~40s audio or long text prompts
     STATIC_SEQ_LEN = 1000
-    
-    flow_lm_onnx_path = None
     
     # ---------------------------------------------------------
     # Export Mimi
@@ -381,8 +353,6 @@ def export_models(output_dir="onnx_models", weights_path="weights/tts_b6369a24.s
     mimi_wrapper = MimiWrapper(
         tts_model.mimi, 
         mimi_structure,
-        emb_std=tts_model.flow_lm.emb_std,
-        emb_mean=tts_model.flow_lm.emb_mean
     )
     
     dummy_latent = torch.randn(1, 1, 32)
@@ -410,9 +380,9 @@ def export_models(output_dir="onnx_models", weights_path="weights/tts_b6369a24.s
     )
     print(f"Mimi exported to {mimi_onnx_path}")
     
-    return flow_lm_onnx_path, mimi_onnx_path, tts_model
+    return mimi_onnx_path, tts_model
 
-def verify_export(flow_lm_path, mimi_path, tts_model, output_dir="onnx_models"):
+def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
     print("Verifying export...")
     
     encoder_path = os.path.join(output_dir, "mimi_encoder.onnx")
@@ -431,7 +401,6 @@ def verify_export(flow_lm_path, mimi_path, tts_model, output_dir="onnx_models"):
         # PyTorch run
         encoder_wrapper = MimiEncoderWrapper(
             tts_model.mimi,
-            speaker_proj_weight=tts_model.flow_lm.speaker_proj_weight
         )
         with torch.no_grad():
             pt_encoder_out = encoder_wrapper(test_audio)
@@ -445,30 +414,6 @@ def verify_export(flow_lm_path, mimi_path, tts_model, output_dir="onnx_models"):
         )
         print("Mimi Encoder output matches!")
     
-    if os.path.exists(conditioner_path):
-        # ---------------------------------------------------------
-        # Verify Text Conditioner
-        # ---------------------------------------------------------
-        print("Verifying Text Conditioner...")
-        ort_conditioner = ort.InferenceSession(conditioner_path)
-        
-        # Test token input
-        test_tokens = torch.randint(0, 1000, (1, 20))
-        
-        # PyTorch run
-        conditioner_wrapper = TextConditionerWrapper(tts_model.flow_lm.conditioner)
-        with torch.no_grad():
-            pt_conditioner_out = conditioner_wrapper(test_tokens)
-        
-        # ONNX run
-        onnx_conditioner_out = ort_conditioner.run(None, {"token_ids": test_tokens.numpy()})[0]
-        
-        np.testing.assert_allclose(
-            pt_conditioner_out.numpy(), onnx_conditioner_out, 
-            rtol=1e-5, atol=1e-5
-        )
-        print("Text Conditioner output matches!")
-    
     if mimi_path and os.path.exists(mimi_path):
         # ---------------------------------------------------------
         # Verify Mimi
@@ -478,14 +423,12 @@ def verify_export(flow_lm_path, mimi_path, tts_model, output_dir="onnx_models"):
         mimi_state = init_states(tts_model.mimi, batch_size=1, sequence_length=1000)
         flat_mimi_state = flatten_state(mimi_state)
         
-        latent = torch.randn(1, 1, tts_model.flow_lm.ldim)
+        latent = torch.randn(1, 1, 96)
         
         # PyTorch run
         mimi_wrapper = MimiWrapper(
             tts_model.mimi, 
             get_state_structure(mimi_state),
-            emb_std=tts_model.flow_lm.emb_std,
-            emb_mean=tts_model.flow_lm.emb_mean
         )
         with torch.no_grad():
             pt_mimi_out = mimi_wrapper(latent, flat_mimi_state)
@@ -521,8 +464,8 @@ def main():
     parser.add_argument("--weights_path", "-w", type=str, default="weights/tts_b6369a24.safetensors", help="Path to weights file")
     args = parser.parse_args()
     
-    flow, mimi, model = export_models(output_dir=args.output_dir, weights_path=args.weights_path)
-    verify_export(flow, mimi, model, output_dir=args.output_dir)
+    mimi, model = export_models(output_dir=args.output_dir, weights_path=args.weights_path)
+    verify_export(mimi, model, output_dir=args.output_dir)
 
 if __name__ == "__main__":
     main()

@@ -1,25 +1,6 @@
 # sig: b6369a24
 
-weights_path: hf://kyutai/pocket-tts/tts_b6369a24.safetensors@427e3d61b276ed69fdd03de0d185fa8a8d97fc5b
-weights_path_without_voice_cloning: hf://kyutai/pocket-tts-without-voice-cloning/tts_b6369a24.safetensors@d4fdd22ae8c8e1cb3634e150ebeff1dab2d16df3
-
-flow_lm:
-  dtype: float32
-  flow:
-    depth: 6
-    dim: 512
-  transformer:
-    d_model: 1024
-    hidden_scale: 4
-    max_period: 10000
-    num_heads: 16
-    num_layers: 6
-  lookup_table:
-    dim: 1024
-    n_bins: 4000
-    tokenizer: sentencepiece
-    tokenizer_path: hf://kyutai/pocket-tts-without-voice-cloning/tokenizer.model@d4fdd22ae8c8e1cb3634e150ebeff1dab2d16df3
-  #weights_path: flow_lm_b6369a24.safetensors
+weights_path: hf://kyutai/mimi/model.safetensors
 
 mimi:
   dtype: float32

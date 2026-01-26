@@ -7,8 +7,8 @@ from pathlib import Path
 OUTPUT_DIR = Path("onnx")
 WEIGHTS_DIR = Path("weights")
 SCRIPTS_DIR = Path("scripts")
-REPO_ID = "kyutai/pocket-tts"
-WEIGHTS_FILENAME = "tts_b6369a24.safetensors"
+REPO_ID = "kyutai/mimi"
+WEIGHTS_FILENAME = "model.safetensors"
 
 def install_check():
     try:
@@ -79,20 +79,6 @@ def run_export_scripts():
         print("❌ Mimi/Conditioner Export Failed")
         sys.exit(1)
 
-    # 2. Export FlowLM
-    print("\n[2/2] Exporting FlowLM (Split Models)...")
-    cmd2 = [
-        sys.executable, 
-        str(SCRIPTS_DIR / "export_flow_lm.py"),
-        "--output_dir", output_dir_str,
-        "--weights_path", weights_path
-    ]
-    try:
-        subprocess.run(cmd2, check=True, env=env)
-        print("✅ FlowLM Export Success")
-    except subprocess.CalledProcessError:
-        print("❌ FlowLM Export Failed")
-        sys.exit(1)
 
 def run_quantization():
     print(f"\n--- [Optional] Running Quantization ---")

@@ -241,15 +241,15 @@ class StreamingTransformer(nn.Module):
 class ProjectedTransformer(nn.Module):
     def __init__(
         self,
-        input_dimension: int,
-        output_dimensions: tuple[int, ...],
-        d_model: int,
-        num_heads: int,
-        num_layers: int,
-        layer_scale: float,
-        context: int,
-        max_period: float,
-        dim_feedforward: int,
+        input_dimension: int = 512,
+        output_dimensions: tuple[int, ...] = (512,),
+        d_model: int = 512,
+        num_heads: int = 8,
+        num_layers: int = 2,
+        layer_scale: float = 0.01,
+        context: int = 250,
+        max_period: float = 10_000.0,
+        dim_feedforward: int = 2048,
     ):
         super().__init__()
         self.transformer = StreamingTransformer(
