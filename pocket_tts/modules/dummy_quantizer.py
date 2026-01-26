@@ -135,7 +135,7 @@ class MimiSplitResidualVectorQuantizer(nn.Module):
         self.semantic_residual_vector_quantizer = MimiResidualVectorQuantizer(self.num_semantic_quantizers)
         self.acoustic_residual_vector_quantizer = MimiResidualVectorQuantizer(self.num_acoustic_quantizers)
 
-    def encode(self, embeddings: torch.Tensor, num_quantizers: float | None = None) -> torch.Tensor:
+    def encode(self, embeddings: torch.Tensor, num_quantizers: int | float | None = None) -> torch.Tensor:
         """
         Encode a given input tensor with the specified frame rate at the given number of quantizers / codebooks. The RVQ encode method sets
         the appropriate number of quantizers to use and returns indices for each quantizer.
