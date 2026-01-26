@@ -161,30 +161,30 @@ class StreamingTransformerLayer(nn.Module):
             self.self_attn = StreamingMultiheadAttention(
                 rope=rope, embed_dim=d_model, num_heads=num_heads
             )
-        self.norm1 = nn.LayerNorm(d_model, eps=1e-5)
-        self.norm2 = nn.LayerNorm(d_model, eps=1e-5)
+        self.input_layernorm = nn.LayerNorm(d_model, eps=1e-5)
+        self.post_attention_layernorm = nn.LayerNorm(d_model, eps=1e-5)
 
-        self.linear1 = nn.Linear(d_model, dim_feedforward, bias=False)
-        self.linear2 = nn.Linear(dim_feedforward, d_model, bias=False)
+        self["mlp.fc1"] = nn.Linear(d_model, dim_feedforward, bias=False)
+        self["mlp.fc2"] = nn.Linear(dim_feedforward, d_model, bias=False)
 
         if layer_scale is None:
-            self.layer_scale_1 = nn.Identity()
-            self.layer_scale_2 = nn.Identity()
+            self.self_attn_layer_scale = nn.Identity()
+            self.mlp_layer_scale = nn.Identity()
         else:
-            self.layer_scale_1 = LayerScale(d_model, layer_scale)
-            self.layer_scale_2 = LayerScale(d_model, layer_scale)
+            self.self_attn_layer_scale = LayerScale(d_model, layer_scale)
+            self.mlp_layer_scale = LayerScale(d_model, layer_scale)
 
     def _ff_block(self, x: torch.Tensor) -> torch.Tensor:
         x_orig = x
-        x = self.norm2(x)
-        update = self.linear2(F.gelu(self.linear1(x)))
-        return x_orig.to(update) + self.layer_scale_2(update)
+        x = self.post_attention_layernorm(x)
+        update = self["mlp.fc2"](F.gelu(self["mlp.fc1"](x)))
+        return x_orig.to(update) + self.mlp_layer_scale(update)
 
     def _sa_block(self, x: torch.Tensor, model_state: dict | None) -> torch.Tensor:
         x_orig = x
-        x = self.norm1(x)
+        x = self.input_layernorm(x)
         update = self.self_attn(x, model_state)
-        return x_orig.to(update) + self.layer_scale_1(update)
+        return x_orig.to(update) + self.self_attn_layer_scale(update)
 
     def forward(self, x: torch.Tensor, model_state: dict | None) -> torch.Tensor:
         x = self._sa_block(x, model_state)
