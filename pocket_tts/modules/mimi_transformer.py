@@ -72,12 +72,11 @@ class MimiStreamingMultiheadAttention(StatefulModule):
         self.context = context
         self.rope = rope
         self.num_heads = num_heads
-        out_dim = 3 * embed_dim
 
         self.o_proj = nn.Linear(embed_dim, embed_dim, bias=False)
-        self.q_proj = nn.Linear(embed_dim, out_dim, bias=False)
-        self.k_proj = nn.Linear(embed_dim, out_dim, bias=False)
-        self.v_proj = nn.Linear(embed_dim, out_dim, bias=False)
+        self.q_proj = nn.Linear(embed_dim, embed_dim, bias=False)
+        self.k_proj = nn.Linear(embed_dim, embed_dim, bias=False)
+        self.v_proj = nn.Linear(embed_dim, embed_dim, bias=False)
 
     def init_state(self, batch_size: int, sequence_length: int) -> dict[str, torch.Tensor]:
         dim_per_head = self.embed_dim // self.num_heads
