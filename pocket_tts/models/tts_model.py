@@ -109,11 +109,6 @@ class TTSModel(nn.Module):
 
         # Load mimi weights from the config safetensors file with complete mapping for strict loading
 
-        if config.mimi.weights_path is not None:
-            logger.info(f"Loading Mimi weights from {config.mimi.weights_path}")
-            mimi_state = get_mimi_state_dict(download_if_necessary(config.mimi.weights_path))
-            tts_model.mimi.load_state_dict(mimi_state, strict=True)
-
         tts_model.mimi.eval()
         # tts_model.to(dtype=torch.float32)
 
