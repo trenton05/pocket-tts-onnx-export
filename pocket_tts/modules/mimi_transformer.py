@@ -245,7 +245,7 @@ class ProjectedTransformer(nn.Module):
         output_dimensions: tuple[int, ...] = (512,),
         d_model: int = 512,
         num_heads: int = 8,
-        num_layers: int = 2,
+        num_layers: int = 8,
         layer_scale: float = 0.01,
         context: int = 250,
         max_period: float = 10_000.0,
