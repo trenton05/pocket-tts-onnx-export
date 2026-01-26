@@ -256,7 +256,7 @@ def patched_conv1d_forward(self, x, model_state: dict | None):
 def patched_convtr_forward(self, x, mimi_state: dict):
     state_dict = self.get_state(mimi_state)
     layer_state = state_dict["partial"]
-    y = self.convtr(x)
+    y = self.conv(x)
     PT = layer_state.shape[-1]
     if PT > 0:
         # Avoid inplace on y if possible, but y is local. 
@@ -267,7 +267,7 @@ def patched_convtr_forward(self, x, mimi_state: dict):
         y_end = y[..., PT:]
         y = torch.cat([y_start, y_end], dim=-1)
 
-        bias = self.convtr.bias
+        bias = self.conv.bias
         for_partial = y[..., -PT:]
         if bias is not None:
             for_partial = for_partial - bias[:, None]
