@@ -106,7 +106,7 @@ class StreamingMultiheadAttention(StatefulModule):
         q = self.q_proj(query)
         k = self.k_proj(query)
         v = self.v_proj(query)
-        projected = torch.stack([q, k, v], dim=2)
+        projected = torch.cat([q, k, v], dim=2)
 
         # Reshape from (b, t, p*h*d) to (b, t, p, h, d) where p=3, h=num_heads
         b, t, _ = projected.shape
