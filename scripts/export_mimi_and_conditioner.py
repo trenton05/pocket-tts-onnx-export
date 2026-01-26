@@ -359,7 +359,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         mimi_structure,
     )
     
-    dummy_latent = torch.randn(1, 1, 32)
+    dummy_latent = torch.randint(0, 2048, (1, 1, 96))
     mimi_args = (dummy_latent, flat_mimi_state)
     
     mimi_input_names = ["latent"] + [f"state_{i}" for i in range(len(flat_mimi_state))]
