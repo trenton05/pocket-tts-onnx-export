@@ -55,7 +55,6 @@ class TTSModel(nn.Module):
         eos_threshold,
     ):
         super().__init__()
-        self.flow_lm = flow_lm
         self.temp = temp
         self.lsd_decode_steps = lsd_decode_steps
         self.noise_clamp = noise_clamp
