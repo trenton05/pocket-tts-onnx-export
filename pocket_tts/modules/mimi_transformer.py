@@ -206,15 +206,7 @@ class ProjectedTransformer(nn.Module):
         dim_feedforward: int = 2048,
     ):
         super().__init__()
-        self.transformer = StreamingTransformer(
-            d_model=d_model,
-            num_heads=num_heads,
-            num_layers=num_layers,
-            layer_scale=layer_scale,
-            context=context,
-            max_period=max_period,
-            dim_feedforward=dim_feedforward,
-        )
+
         self.input_dimension = input_dimension
         self.output_dimensions = output_dimensions
         self.input_proj = None
@@ -242,7 +234,7 @@ class ProjectedTransformer(nn.Module):
                     context=context,
                     rope=self.rope,
                     layer_scale=layer_scale,
-                    attention_kind=kind,
+                    attention_kind="mimi",
                 )
             )
 
