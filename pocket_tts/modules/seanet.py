@@ -119,15 +119,15 @@ class SEANetDecoder(nn.Module):
     def __init__(
         self,
         channels: int = 1,
-        dimension: int = 128,
-        n_filters: int = 32,
-        n_residual_layers: int = 3,
-        ratios: list[int] = [8, 5, 4, 2],
+        dimension: int = 512,
+        n_filters: int = 64,
+        n_residual_layers: int = 1,
+        ratios: list[int] = [8, 6, 5, 4],
         kernel_size: int = 7,
-        last_kernel_size: int = 7,
+        last_kernel_size: int = 3,
         residual_kernel_size: int = 3,
         dilation_base: int = 2,
-        pad_mode: str = "reflect",
+        pad_mode: str = "constant",
         compress: int = 2,
     ):
         super().__init__()
