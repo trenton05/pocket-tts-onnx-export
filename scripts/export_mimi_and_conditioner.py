@@ -126,7 +126,11 @@ def patched_sma_forward(self, query: torch.Tensor, model_state: dict | None):
     # Standard forward logic but using 'step' for shift
     state = self.check_model_state(model_state)
 
-    projected = self.in_proj(query)
+    q = self.q_proj(query)
+    k = self.k_proj(query)
+    v = self.v_proj(query)
+    projected = torch.cat([q, k, v], dim=2)
+
     # Reshape from (b, t, p*h*d) to (b, t, p, h, d) where p=3, h=num_heads
     b, t, _ = projected.shape
     # torch._check(t > 0) removed for legacy export compatibility
@@ -151,7 +155,7 @@ def patched_sma_forward(self, query: torch.Tensor, model_state: dict | None):
     x = F.scaled_dot_product_attention(q, k, v, attn_mask)
     x = x.transpose(1, 2)
     x = x.reshape(b, t, self.num_heads * d)
-    x = self.out_proj(x)
+    x = self.o_proj(x)
 
     return x
 
