@@ -50,6 +50,7 @@ class MimiModel(nn.Module):
             assert downsample_stride == int(downsample_stride), (
                 f"Only integer strides are supported, got {downsample_stride}"
             )
+            downsample_stride = int(downsample_stride)
             self.downsample = StreamingConv1d(
                 dimension,
                 dimension,
