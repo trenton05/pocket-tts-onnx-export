@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Configuration models for loading YAML config files."""
 
 from pathlib import Path

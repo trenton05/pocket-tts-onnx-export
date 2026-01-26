@@ -1,5 +1,6 @@
 """Various utilities for audio convertion (pcm format, sample rate and channels),
 and volume normalization."""
+from __future__ import annotations
 
 import torch
 from scipy.signal import resample_poly

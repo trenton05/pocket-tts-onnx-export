@@ -4,7 +4,7 @@ import torch
 from torch import nn
 
 from pocket_tts.modules.conv import pad_for_conv1d
-from pocket_tts.modules.dummy_quantizer import DummyQuantizer
+from pocket_tts.modules.dummy_quantizer import MimiSplitResidualVectorQuantizer
 from pocket_tts.modules.mimi_transformer import ProjectedTransformer
 from pocket_tts.modules.resample import ConvDownsample1d, ConvTrUpsample1d
 from pocket_tts.modules.seanet import SEANetDecoder, SEANetEncoder
@@ -17,7 +17,7 @@ class MimiModel(nn.Module):
         self,
         encoder: SEANetEncoder,
         decoder: SEANetDecoder,
-        quantizer: DummyQuantizer,
+        quantizer: MimiSplitResidualVectorQuantizer,
         frame_rate: float,
         encoder_frame_rate: float,
         sample_rate: int,
@@ -79,6 +79,8 @@ class MimiModel(nn.Module):
         raise NotImplementedError()
 
     def decode_from_latent(self, latent: torch.Tensor, mimi_state) -> torch.Tensor:
+        latent = self.quantizer.decode(latent)
+
         emb = self._to_encoder_framerate(latent, mimi_state)
         (emb,) = self.decoder_transformer(emb, mimi_state)
         out = self.decoder(emb, mimi_state)
@@ -108,4 +110,7 @@ class MimiModel(nn.Module):
 
         (emb,) = self.encoder_transformer(emb, model_state=None)
         emb = self._to_framerate(emb)
+
+        emb = self.quantizer.encode(embeddings, num_quantizers)
+        emb = codes.transpose(0, 1)
         return emb

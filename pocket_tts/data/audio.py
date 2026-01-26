@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Audio IO methods are defined in this module (info, read, write),
 We rely on av library for faster read when possible, otherwise on torchaudio.
