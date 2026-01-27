@@ -7,3 +7,6 @@ ssh -i ~/aosp.pem gitlab-runner@172.202.112.196 'cd /home/gitlab-runner/kyutai/p
 
 scp -i ~/aosp.pem gitlab-runner@172.202.112.196:/home/gitlab-runner/kyutai/pocket-tts-onnx-export/onnx/mimi_encoder.onnx ~/Downloads/mimi_encoder.onnx
 scp -i ~/aosp.pem gitlab-runner@172.202.112.196:/home/gitlab-runner/kyutai/pocket-tts-onnx-export/onnx/mimi_decoder.onnx ~/Downloads/mimi_decoder.onnx
+
+adb -s WT02082500015 push ~/Downloads/mimi_encoder.onnx /data/mimi_encoder.onnx
+adb -s WT02082500015 push ~/Downloads/mimi_decoder.onnx /data/mimi_decoder.onnx
