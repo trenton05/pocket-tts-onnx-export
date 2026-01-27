@@ -330,6 +330,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     
     mimi_encoder_wrapper = MimiEncoderWrapper(
         tts_model.mimi,
+        mimi_structure,
     )
     
     # Dummy audio: 1 second at 24kHz
@@ -346,7 +347,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         encoder_onnx_path,
         input_names=mimi_input_names,
         output_names=mimi_output_names,
-        dynamic_shapes={"input": {2: "audio_len"}},
+        dynamic_axes={"input": {2: "audio_len"}},
         opset_version=18,
         dynamo=True,
         external_data=False

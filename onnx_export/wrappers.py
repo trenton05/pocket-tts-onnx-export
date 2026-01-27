@@ -47,9 +47,10 @@ class MimiWrapper(nn.Module):
 
 class MimiEncoderWrapper(nn.Module):
     """Wrapper for Mimi encoder that takes raw audio and returns latent embeddings."""
-    def __init__(self, mimi: MimiModel):
+    def __init__(self, mimi: MimiModel, state_structure):
         super().__init__()
         self.mimi = mimi
+        self.state_structure = state_structure
 
     def forward(self, input, flat_state):
         model_state, _ = unflatten_state(flat_state, self.state_structure)
