@@ -349,7 +349,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         output_names=mimi_output_names,
         dynamic_axes={"input": {2: "audio_len"}},
         opset_version=18,
-        dynamo=False,
+        dynamo=True,
         external_data=False
     )
     print(f"Mimi Encoder exported to {encoder_onnx_path}")
