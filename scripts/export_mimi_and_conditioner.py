@@ -367,7 +367,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         mimi_structure,
     )
     
-    dummy_latent = torch.randint(0, 2048, (1, 1, 96))
+    dummy_latent = torch.randint(0, 2048, (1, 8, 1))
     mimi_args = (dummy_latent, flat_mimi_state)
     
     # Mimi dynamic axes
@@ -442,7 +442,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         ort_session_mimi = ort.InferenceSession(mimi_path)
         
         
-        latent = torch.randint(0, 2048, (1, 1, 8))
+        latent = torch.randint(0, 2048, (1, 8, 1))
         
         # PyTorch run
         mimi_wrapper = MimiWrapper(
