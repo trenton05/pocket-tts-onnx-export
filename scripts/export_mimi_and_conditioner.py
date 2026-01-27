@@ -321,7 +321,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     flat_mimi_state = flatten_state(mimi_state)
     print(f"Initialized Mimi state with length {len(flat_mimi_state)} tensors.")
     for i in range(len(flat_mimi_state)):
-        print(f"  State tensor {i}: shape {flat_mimi_state[i].shape}, dtype {flat_mimi_state[i].dtype}")
+        print(f"  State tensor {i}: shape {flat_mimi_state[i].shape}, dtype {flat_mimi_state[i].dtype}, value {flat_mimi_state[i].flatten()[0].item() if flat_mimi_state[i].numel() > 0 else ''}")
 
     # ---------------------------------------------------------
     # Export Mimi Encoder (audio -> latents)
