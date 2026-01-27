@@ -11,13 +11,13 @@ class MimiWrapper(nn.Module):
         self.mimi = mimi
         self.state_structure = state_structure
         
-    def forward(self, latent, flat_state):
+    def forward(self, input, flat_state):
         try:
             # Un-normalize latent: scale and shift back
             # mimi_decoding_input = latent * self.emb_std + self.emb_mean
             
             # Transpose: [B, T, D] -> [B, D, T]
-            transposed = latent # latent.transpose(-1, -2)
+            transposed = input # latent.transpose(-1, -2)
             
             model_state, _ = unflatten_state(flat_state, self.state_structure)
 
@@ -29,9 +29,9 @@ class MimiWrapper(nn.Module):
 
             if torch.jit.is_tracing():
                 from torch.onnx import operators
-                seq_len = operators.shape_as_tensor(latent)[1]
+                seq_len = operators.shape_as_tensor(input)[1]
             else:
-                seq_len = latent.shape[1]
+                seq_len = input.shape[1]
             
             # Increment by the hop factor (200Hz transformer / 12.5Hz latent = 16)
             increment = seq_len * 16
@@ -51,11 +51,11 @@ class MimiEncoderWrapper(nn.Module):
         super().__init__()
         self.mimi = mimi
 
-    def forward(self, audio, flat_state):
+    def forward(self, input, flat_state):
         model_state, _ = unflatten_state(flat_state, self.state_structure)
 
         # audio: [B, C, T] -> latent: [B, T', D]
-        encoded = self.mimi.encode_to_latent(audio, model_state)
+        encoded = self.mimi.encode_to_latent(input, model_state)
         # encoded is [B, D, T'], we need [B, T', D]
         latents = encoded # encoded.transpose(-1, -2)
         
