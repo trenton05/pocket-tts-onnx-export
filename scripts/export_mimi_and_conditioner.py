@@ -349,7 +349,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         output_names=mimi_output_names,
         dynamic_axes={"input": {2: "audio_len"}},
         opset_version=18,
-        dynamo=True,
+        dynamo=False,
         external_data=False
     )
     print(f"Mimi Encoder exported to {encoder_onnx_path}")
@@ -367,7 +367,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         mimi_structure,
     )
     
-    dummy_latent = torch.randint(0, 2048, (1, 96, 1))
+    dummy_latent = torch.randint(0, 2048, (1, 1, 96))
     mimi_args = (dummy_latent, flat_mimi_state)
     
     # Mimi dynamic axes
@@ -385,7 +385,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         output_names=mimi_output_names,
         dynamic_axes=mimi_dynamic_axes,
         opset_version=18,
-        dynamo=True
+        dynamo=False
     )
     print(f"Mimi exported to {mimi_onnx_path}")
     
@@ -405,7 +405,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         ort_encoder = ort.InferenceSession(encoder_path)
         
         # Test audio input
-        test_audio = torch.randn(1, 1, 24000)  # 1 second
+        test_audio = torch.randn(1, 1, 1920)  # one frame
         
         # PyTorch run
         encoder_wrapper = MimiEncoderWrapper(
@@ -432,7 +432,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         mimi_state = init_states(tts_model.mimi, batch_size=1, sequence_length=1000)
         flat_mimi_state = flatten_state(mimi_state)
         
-        latent = torch.randint(0, 2048, (1, 1, 96))
+        latent = torch.randint(0, 2048, (1, 1, 8))
         
         # PyTorch run
         mimi_wrapper = MimiWrapper(
