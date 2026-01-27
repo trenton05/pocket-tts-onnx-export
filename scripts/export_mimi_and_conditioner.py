@@ -334,7 +334,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     )
     
     # Dummy audio: 1 second at 24kHz
-    dummy_audio = torch.randn(1, 1, 24000)
+    dummy_audio = torch.randn(1, 1, 1920)
     
     mimi_input_names = ["input"] + [f"in_state_{i}" for i in range(len(flat_mimi_state))]
     mimi_output_names = ["output"] + [f"out_state_{i}" for i in range(len(flat_mimi_state))]
