@@ -430,7 +430,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         onnx_encoder_out = ort_encoder.run(None, ort_mimi_inputs)[0]
         
         np.testing.assert_allclose(
-            pt_encoder_out.numpy(), onnx_encoder_out, 
+            pt_encoder_out.numpy(), onnx_encoder_out[0], 
             rtol=1e-4, atol=1e-4
         )
         print("Mimi Encoder output matches!")

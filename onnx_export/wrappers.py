@@ -59,8 +59,9 @@ class MimiEncoderWrapper(nn.Module):
         encoded = self.mimi.encode_to_latent(input, model_state)
         # encoded is [B, D, T'], we need [B, T', D]
         latents = encoded # encoded.transpose(-1, -2)
+        new_flat_state = flatten_state(model_state)
         
-        return latents
+        return (latents, *new_flat_state)
 
 
 class TextConditionerWrapper(nn.Module):
