@@ -427,7 +427,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
             ort_mimi_inputs[f"in_state_{i}"] = state_tensor.numpy()
             
         # ONNX run
-        onnx_encoder_out = ort_encoder.run(None, ort_mimi_inputs)[0]
+        onnx_encoder_out = ort_encoder.run(None, ort_mimi_inputs)
         
         np.testing.assert_allclose(
             pt_encoder_out[0].numpy(), onnx_encoder_out[0], 
