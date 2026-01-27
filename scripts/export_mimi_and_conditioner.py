@@ -417,7 +417,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
             mimi_state,
         )
         with torch.no_grad():
-            (pt_encoder_out, _) = encoder_wrapper(test_audio, flat_mimi_state)
+            pt_encoder_out = encoder_wrapper(test_audio, flat_mimi_state)
         
         # ONNX run
         ort_mimi_inputs = {
@@ -430,7 +430,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         onnx_encoder_out = ort_encoder.run(None, ort_mimi_inputs)[0]
         
         np.testing.assert_allclose(
-            pt_encoder_out.numpy(), onnx_encoder_out[0], 
+            pt_encoder_out[0].numpy(), onnx_encoder_out[0], 
             rtol=1e-4, atol=1e-4
         )
         print("Mimi Encoder output matches!")
