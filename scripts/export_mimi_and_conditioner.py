@@ -342,7 +342,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     
     torch.onnx.export(
         mimi_encoder_wrapper,
-        (dummy_audio,),
+        (dummy_audio, flat_mimi_state),
         encoder_onnx_path,
         input_names=mimi_input_names,
         output_names=mimi_output_names,
