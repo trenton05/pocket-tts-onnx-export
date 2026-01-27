@@ -313,6 +313,16 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
 
     tts_model.eval()
     
+    # Initialize state with static size sufficient for expected usage
+    # 1000 tokens covers ~40s audio or long text prompts
+    STATIC_SEQ_LEN = 1000
+    mimi_state = init_states(tts_model.mimi, batch_size=1, sequence_length=STATIC_SEQ_LEN)
+    mimi_structure = get_state_structure(mimi_state)
+    flat_mimi_state = flatten_state(mimi_state)
+    print(f"Initialized Mimi state with length {len(flat_mimi_state)} tensors.")
+    for i in range(len(flat_mimi_state)):
+        print(f"  State tensor {i}: shape {flat_mimi_state[i].shape}, dtype {flat_mimi_state[i].dtype}")
+
     # ---------------------------------------------------------
     # Export Mimi Encoder (audio -> latents)
     # ---------------------------------------------------------
@@ -325,33 +335,30 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     # Dummy audio: 1 second at 24kHz
     dummy_audio = torch.randn(1, 1, 24000)
     
+    mimi_input_names = ["input"] + [f"in_state_{i}" for i in range(len(flat_mimi_state))]
+    mimi_output_names = ["output"] + [f"out_state_{i}" for i in range(len(flat_mimi_state))]
+    
     encoder_onnx_path = os.path.join(output_dir, "mimi_encoder.onnx")
     
     torch.onnx.export(
         mimi_encoder_wrapper,
         (dummy_audio,),
         encoder_onnx_path,
-        input_names=["audio"],
-        output_names=["latents"],
-        dynamic_shapes={"audio": {2: "audio_len"}},
+        input_names=mimi_input_names,
+        output_names=mimi_output_names,
+        dynamic_shapes={"input": {2: "audio_len"}},
         opset_version=18,
         dynamo=True,
         external_data=False
     )
     print(f"Mimi Encoder exported to {encoder_onnx_path}")
     
-    # Initialize state with static size sufficient for expected usage
-    # 1000 tokens covers ~40s audio or long text prompts
-    STATIC_SEQ_LEN = 1000
     
     # ---------------------------------------------------------
     # Export Mimi
     # ---------------------------------------------------------
     print("Exporting Mimi...")
     
-    mimi_state = init_states(tts_model.mimi, batch_size=1, sequence_length=STATIC_SEQ_LEN)
-    mimi_structure = get_state_structure(mimi_state)
-    flat_mimi_state = flatten_state(mimi_state)
     
     
     mimi_wrapper = MimiWrapper(
@@ -359,15 +366,12 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         mimi_structure,
     )
     
-    dummy_latent = torch.randint(0, 2048, (1, 1, 96))
+    dummy_latent = torch.randint(0, 2048, (1, 96, 1))
     mimi_args = (dummy_latent, flat_mimi_state)
-    
-    mimi_input_names = ["latent"] + [f"state_{i}" for i in range(len(flat_mimi_state))]
-    mimi_output_names = ["audio_frame"] + [f"out_state_{i}" for i in range(len(flat_mimi_state))]
     
     # Mimi dynamic axes
     mimi_dynamic_axes = {
-        "latent": {1: "seq_len"}
+        "input": {1: "seq_len"}
     }
     
     mimi_onnx_path = os.path.join(output_dir, "mimi_decoder.onnx")
@@ -380,7 +384,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         output_names=mimi_output_names,
         dynamic_axes=mimi_dynamic_axes,
         opset_version=18,
-        dynamo=False
+        dynamo=True
     )
     print(f"Mimi exported to {mimi_onnx_path}")
     

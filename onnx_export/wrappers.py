@@ -19,10 +19,10 @@ class MimiWrapper(nn.Module):
             # Transpose: [B, T, D] -> [B, D, T]
             transposed = latent # latent.transpose(-1, -2)
             
+            model_state, _ = unflatten_state(flat_state, self.state_structure)
+
             # Project: [B, dim, 1]
             quantized = self.mimi.quantizer.decode(transposed)
-            
-            model_state, _ = unflatten_state(flat_state, self.state_structure)
             
             # Decode
             audio_frame = self.mimi.decode_from_latent(quantized, model_state)
@@ -47,23 +47,17 @@ class MimiWrapper(nn.Module):
 
 class MimiEncoderWrapper(nn.Module):
     """Wrapper for Mimi encoder that takes raw audio and returns latent embeddings."""
-    def __init__(self, mimi: MimiModel, speaker_proj_weight=None):
+    def __init__(self, mimi: MimiModel):
         super().__init__()
         self.mimi = mimi
-        if speaker_proj_weight is not None:
-            self.register_buffer("speaker_proj_weight", speaker_proj_weight)
-        else:
-            self.speaker_proj_weight = None
 
-    def forward(self, audio):
+    def forward(self, audio, flat_state):
+        model_state, _ = unflatten_state(flat_state, self.state_structure)
+
         # audio: [B, C, T] -> latent: [B, T', D]
-        encoded = self.mimi.encode_to_latent(audio)
+        encoded = self.mimi.encode_to_latent(audio, model_state)
         # encoded is [B, D, T'], we need [B, T', D]
         latents = encoded # encoded.transpose(-1, -2)
-        
-        # Apply speaker projection if available
-        if self.speaker_proj_weight is not None:
-            latents = torch.nn.functional.linear(latents, self.speaker_proj_weight)
         
         return latents
 

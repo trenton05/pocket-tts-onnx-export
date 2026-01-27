@@ -75,14 +75,14 @@ class MimiModel(nn.Module):
     def frame_size(self) -> int:
         return int(self.sample_rate / self.frame_rate)
 
-    def _to_framerate(self, x: torch.Tensor):
+    def _to_framerate(self, x: torch.Tensor, mimi_state):
         # Convert from the encoder frame rate to the overall framerate.
         _, _, length = x.shape
         frame_rate = self.encoder_frame_rate
         new_frame_rate = self.frame_rate
         if frame_rate == new_frame_rate:
             return x
-        return self.downsample(x, model_state=None)
+        return self.downsample(x, mimi_state)
 
     def _to_encoder_framerate(self, x: torch.Tensor, mimi_state) -> torch.Tensor:
         # Convert from overall framerate to the encoder frame rate.
@@ -103,7 +103,7 @@ class MimiModel(nn.Module):
         # out contains extra padding added by the encoder and decoder
         return out
 
-    def encode_to_latent(self, x: torch.Tensor) -> torch.Tensor:
+    def encode_to_latent(self, x: torch.Tensor, model_state: dict = None) -> torch.Tensor:
         """Projects a batch of waveforms to unquantized latent space.
 
         Args:
@@ -122,10 +122,10 @@ class MimiModel(nn.Module):
         # `x` needs to be exactly a multiple of the frame size,
         # reproducing the previous padding behavior here.
         x = pad_for_conv1d(x, frame_size, frame_size)
-        emb = self.encoder(x, model_state=None)
+        emb = self.encoder(x, model_state)
 
-        (emb,) = self.encoder_transformer(emb, model_state=None)
-        emb = self._to_framerate(emb)
+        (emb,) = self.encoder_transformer(emb, model_state)
+        emb = self._to_framerate(emb, model_state)
 
         emb = self.quantizer.encode(emb, 8)
         emb = emb.transpose(0, 1)
