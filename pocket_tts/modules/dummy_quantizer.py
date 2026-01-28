@@ -19,9 +19,10 @@ class MimiEuclideanCodebook(nn.Module):
 
     @property
     def embed(self) -> torch.Tensor:
-        if self._embed is None:
-            self._embed = self.embed_sum / self.cluster_usage.clamp(min=self.epsilon)[:, None]
-        return self._embed
+        # if self._embed is None:
+        #     self._embed = self.embed_sum / self.cluster_usage.clamp(min=self.epsilon)[:, None]
+        # return self._embed
+        return self.embed_sum / self.cluster_usage.clamp(min=self.epsilon)[:, None]
 
     def quantize(self, hidden_states):
         # Projects each vector in `hidden_states` over the nearest centroid and return its index.
