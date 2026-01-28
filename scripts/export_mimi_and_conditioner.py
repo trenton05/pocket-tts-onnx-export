@@ -349,6 +349,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         output_names=mimi_output_names,
         opset_version=18,
         dynamo=True,
+        strict=True,
         external_data=False
     )
     print(f"Mimi Encoder exported to {encoder_onnx_path}")
@@ -383,6 +384,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         input_names=mimi_input_names,
         output_names=mimi_output_names,
         opset_version=18,
+        strict=True,
         dynamo=False
     )
     print(f"Mimi exported to {mimi_onnx_path}")
