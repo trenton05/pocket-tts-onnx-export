@@ -50,7 +50,7 @@ from torch import nn
 class MimiEuclideanCodebook(nn.Module):
     def __init__(self):
         super().__init__()
-        self._epsilon = 1e-5
+        self._epsilon = torch.tensor([1e-5], dtype=torch.float32)
         self.register_buffer("initialized", torch.tensor([True], dtype=torch.float32))
         self.register_buffer("cluster_usage", torch.ones(2048))
         self.register_buffer("embed_sum", torch.zeros(2048, 256))
