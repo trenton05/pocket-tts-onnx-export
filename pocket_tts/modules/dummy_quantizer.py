@@ -68,7 +68,7 @@ class MimiEuclideanCodebook(nn.Module):
         c2 = embedding.square().sum(axis=-1) / 2
 
         target_shape = xs.shape[:-1]
-        xs = xs.flatten(end_axis=-2)
+        xs = xs.flatten(end_dim=-2)
         dot_prod = xs @ embedding.swapaxes(-1, -2)
         return (c2 - dot_prod).argmin(axis=-1).reshape(target_shape)
 
