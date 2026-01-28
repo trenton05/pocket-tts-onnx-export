@@ -315,7 +315,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     
     # Initialize state with static size sufficient for expected usage
     # 1000 tokens covers ~40s audio or long text prompts
-    STATIC_SEQ_LEN = 1000
+    STATIC_SEQ_LEN = 100
     mimi_state = init_states(tts_model.mimi, batch_size=1, sequence_length=STATIC_SEQ_LEN)
     mimi_structure = get_state_structure(mimi_state)
     flat_mimi_state = flatten_state(mimi_state)
