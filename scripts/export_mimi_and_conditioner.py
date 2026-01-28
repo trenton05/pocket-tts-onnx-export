@@ -397,7 +397,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
     encoder_path = os.path.join(output_dir, "mimi_encoder.onnx")
     conditioner_path = os.path.join(output_dir, "text_conditioner.onnx")
     
-    mimi_state = init_states(tts_model.mimi, batch_size=1, sequence_length=1000)
+    mimi_state = init_states(tts_model.mimi, batch_size=1, sequence_length=100)
     flat_mimi_state = flatten_state(mimi_state)
 
     if os.path.exists(encoder_path):
