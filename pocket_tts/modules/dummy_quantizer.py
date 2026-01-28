@@ -58,13 +58,13 @@ class MimiEuclideanCodebook(nn.Module):
     def update(self, parameters: dict) -> nn.Module:
         super().update(parameters)
         cluster_usage = torch.maximum(self.cluster_usage, self._epsilon)[:, None]
-        embedding = self.embedding_sum / cluster_usage
+        embedding = self.embed_sum / cluster_usage
         c2 = embedding.square().sum(axis=-1) / 2
         return self
 
     def encode(self, xs: torch.Tensor) -> torch.Tensor:
         cluster_usage = torch.maximum(self.cluster_usage, self._epsilon)[:, None]
-        embedding = self.embedding_sum / cluster_usage
+        embedding = self.embed_sum / cluster_usage
         c2 = embedding.square().sum(axis=-1) / 2
 
         target_shape = xs.shape[:-1]
@@ -76,7 +76,7 @@ class MimiEuclideanCodebook(nn.Module):
         target_shape = list(xs.shape) + [256]
 
         cluster_usage = torch.maximum(self.cluster_usage, self._epsilon)[:, None]
-        embedding = self.embedding_sum / cluster_usage
+        embedding = self.embed_sum / cluster_usage
         return torch.take(embedding, xs.flatten(), axis=0).reshape(target_shape)
 
 
