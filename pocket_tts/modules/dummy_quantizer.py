@@ -50,19 +50,20 @@ from torch import nn
 class MimiEuclideanCodebook(nn.Module):
     def __init__(self):
         super().__init__()
+        self._epsilon = 1e-5
         self.register_buffer("initialized", torch.tensor([True], dtype=torch.float32))
         self.register_buffer("cluster_usage", torch.ones(2048))
         self.register_buffer("embed_sum", torch.zeros(2048, 256))
 
     def update(self, parameters: dict) -> nn.Module:
         super().update(parameters)
-        cluster_usage = torch.maximum(self.cluster_usage, 1e-5)[:, None]
+        cluster_usage = torch.maximum(self.cluster_usage, self._epsilon)[:, None]
         embedding = self.embedding_sum / cluster_usage
         c2 = embedding.square().sum(axis=-1) / 2
         return self
 
     def encode(self, xs: torch.Tensor) -> torch.Tensor:
-        cluster_usage = torch.maximum(self.cluster_usage, 1e-5)[:, None]
+        cluster_usage = torch.maximum(self.cluster_usage, self._epsilon)[:, None]
         embedding = self.embedding_sum / cluster_usage
         c2 = embedding.square().sum(axis=-1) / 2
 
@@ -74,7 +75,7 @@ class MimiEuclideanCodebook(nn.Module):
     def decode(self, xs: torch.Tensor) -> torch.Tensor:
         target_shape = list(xs.shape) + [256]
 
-        cluster_usage = torch.maximum(self.cluster_usage, )[:, None]
+        cluster_usage = torch.maximum(self.cluster_usage, self._epsilon)[:, None]
         embedding = self.embedding_sum / cluster_usage
         return torch.take(embedding, xs.flatten(), axis=0).reshape(target_shape)
 
