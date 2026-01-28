@@ -77,7 +77,7 @@ class MimiEuclideanCodebook(nn.Module):
 
         cluster_usage = torch.maximum(self.cluster_usage, self._epsilon)[:, None]
         embedding = self.embed_sum / cluster_usage
-        return torch.take(embedding, xs.flatten(), axis=0).reshape(target_shape)
+        return torch.take(embedding, xs.flatten()).reshape(target_shape)
 
 
 # Copied from transformers.models.encodec.modeling_encodec.EncodecVectorQuantization with Encodec->Mimi
