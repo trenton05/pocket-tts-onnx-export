@@ -347,7 +347,6 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         encoder_onnx_path,
         input_names=mimi_input_names,
         output_names=mimi_output_names,
-        dynamic_axes={"input": {2: "audio_len"}},
         opset_version=18,
         dynamo=True,
         external_data=False
@@ -383,7 +382,6 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         mimi_onnx_path,
         input_names=mimi_input_names,
         output_names=mimi_output_names,
-        dynamic_axes=mimi_dynamic_axes,
         opset_version=18,
         dynamo=False
     )
