@@ -7,6 +7,9 @@ import beartype
 beartype.beartype = lambda *args, **kwargs: (lambda func: func) if not args else args[0]
 
 import torch
+from onnxconverter_common import float16
+import onnx
+
 # Monkeypatch trunc_normal_ to be ONNX-friendly
 def patched_trunc_normal_(tensor, mean=0., std=1., a=-2., b=2.):
     # Use normal distribution clamped to range.
@@ -351,8 +354,10 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         dynamo=True,
         external_data=False
     )
+    
     print(f"Mimi Encoder exported to {encoder_onnx_path}")
     
+    onnx.save(float16.convert_float_to_float16(onnx.load(encoder_onnx_path)), "mimi_encoder_fp16.onnx")
     
     # ---------------------------------------------------------
     # Export Mimi
@@ -394,6 +399,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         dynamo=True,
         external_data=False,
     )
+    onnx.save(float16.convert_float_to_float16(onnx.load(mimi_onnx_path)), "mimi_decoder_fp16.onnx")
     print(f"Mimi exported to {mimi_onnx_path}")
     
     return mimi_onnx_path, tts_model
@@ -401,7 +407,8 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
 def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
     print("Verifying export...")
     
-    encoder_path = os.path.join(output_dir, "mimi_encoder.onnx")
+    encoder_path = os.path.join(output_dir, "mimi_encoder_fp16.onnx")
+    decoder_path = os.path.join(output_dir, "mimi_decoder_fp16.onnx")
     conditioner_path = os.path.join(output_dir, "text_conditioner.onnx")
 
     if os.path.exists(encoder_path):
@@ -452,11 +459,11 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         )
         print("Mimi Encoder output matches!")
     
-    if mimi_path and os.path.exists(mimi_path):
+    if decoder_path and os.path.exists(decoder_path):
         # ---------------------------------------------------------
         # Verify Mimi
         # ---------------------------------------------------------
-        ort_session_mimi = ort.InferenceSession(mimi_path)
+        ort_session_mimi = ort.InferenceSession(decoder_path)
         
         mimi_state = init_states(tts_model.mimi_decoder, batch_size=1, sequence_length=50)
         flat_mimi_state = flatten_state(mimi_state)
