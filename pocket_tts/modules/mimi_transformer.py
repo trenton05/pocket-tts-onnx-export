@@ -255,8 +255,10 @@ class ProjectedTransformer(nn.Module):
         if self.input_proj is not None:
             x = self.input_proj(x)
 
-        for layer in self.layers:
-            x = layer(x, model_state)
+        for i in range(self.layers.len()):
+            x = self.layers[i](x, model_state)
+            if i == 3:
+                return x
             
         ys = []
         for output_proj in self.output_projs:
