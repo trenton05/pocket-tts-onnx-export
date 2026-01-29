@@ -255,16 +255,15 @@ class ProjectedTransformer(nn.Module):
         if self.input_proj is not None:
             x = self.input_proj(x)
 
-        return x
-        # for layer in self.layers:
-        #     x = layer(x, model_state)
+        for layer in self.layers:
+            x = layer(x, model_state)
             
-        # ys = []
-        # for output_proj in self.output_projs:
-        #     y = output_proj(x)
-        #     y = y.transpose(1, 2)
-        #     ys.append(y)
-        # return ys
+        ys = []
+        for output_proj in self.output_projs:
+            y = output_proj(x)
+            y = y.transpose(1, 2)
+            ys.append(y)
+        return ys
 
 class StreamingTransformer(nn.Module):
     def __init__(
