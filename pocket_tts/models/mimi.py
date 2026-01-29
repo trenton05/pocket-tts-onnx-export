@@ -125,9 +125,8 @@ class MimiModel(nn.Module):
         emb = self.encoder(x, model_state)
 
         (emb,) = self.encoder_transformer(emb, model_state)
-        return emb
-        # emb = self._to_framerate(emb, model_state)
+        emb = self._to_framerate(emb, model_state)
 
-        # emb = self.quantizer.encode(emb, 8)
-        # emb = emb.transpose(0, 1)
-        # return emb
+        emb = self.quantizer.encode(emb, 8)
+        emb = emb.transpose(0, 1)
+        return emb
