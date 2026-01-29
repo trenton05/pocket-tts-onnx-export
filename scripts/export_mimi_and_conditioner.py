@@ -338,8 +338,8 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     # Dummy audio: 1 second at 24kHz
     dummy_audio = torch.randn(1, 1, 1920)
     
-    mimi_input_names = ["input"] + [f"in_state_{i}" for i in range(len(flat_encoder_state))]
-    mimi_output_names = ["output"] + [f"out_state_{i}" for i in range(len(flat_encoder_state))]
+    encoder_input_names = ["input"] + [f"in_state_{i}" for i in range(len(flat_encoder_state))]
+    encoder_output_names = ["output"] + [f"out_state_{i}" for i in range(len(flat_encoder_state))]
     
     encoder_onnx_path = os.path.join(output_dir, "mimi_encoder.onnx")
     
@@ -347,8 +347,8 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         mimi_encoder_wrapper,
         (dummy_audio, *flat_encoder_state),
         encoder_onnx_path,
-        input_names=mimi_input_names,
-        output_names=mimi_output_names,
+        input_names=encoder_input_names,
+        output_names=encoder_output_names,
         opset_version=18,
         dynamo=True,
         external_data=False
@@ -386,13 +386,15 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         "input": {1: "seq_len"}
     }
     
+    decoder_input_names = ["input"] + [f"in_state_{i}" for i in range(len(flat_decoder_state))]
+    decoder_output_names = ["output"] + [f"out_state_{i}" for i in range(len(flat_decoder_state))]
     
     torch.onnx.export(
         mimi_wrapper,
         mimi_args,
         mimi_onnx_path,
-        input_names=mimi_input_names,
-        output_names=mimi_output_names,
+        input_names=decoder_input_names,
+        output_names=decoder_output_names,
         opset_version=18,
         dynamo=True,
         external_data=False,
