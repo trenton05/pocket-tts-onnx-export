@@ -316,7 +316,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     
     # Initialize state with static size sufficient for expected usage
     # 1000 tokens covers ~40s audio or long text prompts
-    STATIC_SEQ_LEN = 100
+    STATIC_SEQ_LEN = 50
     encoder_state = init_states(tts_model.mimi_encoder, batch_size=1, sequence_length=STATIC_SEQ_LEN)
     encoder_structure = get_state_structure(encoder_state)
     flat_encoder_state = flatten_state(encoder_state)
@@ -412,7 +412,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         print("Verifying Mimi Encoder...")
         ort_encoder = ort.InferenceSession(encoder_path)
         
-        mimi_state = init_states(tts_model.mimi_encoder, batch_size=1, sequence_length=100)
+        mimi_state = init_states(tts_model.mimi_encoder, batch_size=1, sequence_length=50)
 
         flat_mimi_state = flatten_state(mimi_state)
         
