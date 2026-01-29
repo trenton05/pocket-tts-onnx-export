@@ -258,7 +258,7 @@ class ProjectedTransformer(nn.Module):
 
         for i in range(self.num_layers):
             x = self.layers[i](x, model_state)
-            if i == 3:
+            if i == 1:
                 return x
             
         ys = []
