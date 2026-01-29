@@ -29,12 +29,12 @@ class MimiWrapper(nn.Module):
 
             if torch.jit.is_tracing():
                 from torch.onnx import operators
-                seq_len = operators.shape_as_tensor(input)[1]
+                seq_len = operators.shape_as_tensor(input)[2]
             else:
-                seq_len = input.shape[1]
+                seq_len = input.shape[2]
             
-            # Increment by the hop factor (200Hz transformer / 12.5Hz latent = 16)
-            increment = seq_len * 16
+            # Increment by the hop factor (25Hz transformer / 12.5Hz latent = 2)
+            increment = seq_len * 2
             increment_steps(self.mimi, model_state, increment=increment)
             
             new_flat_state = flatten_state(model_state)
@@ -59,6 +59,11 @@ class MimiEncoderWrapper(nn.Module):
         encoded = self.mimi.encode_to_latent(input, model_state)
         # encoded is [B, D, T'], we need [B, T', D]
         latents = encoded # encoded.transpose(-1, -2)
+        
+        seq_len = input.shape[1]
+        increment = seq_len * 2
+        increment_steps(self.mimi, model_state, increment=increment)
+    
         new_flat_state = flatten_state(model_state)
         
         return (latents, *new_flat_state)
