@@ -13,6 +13,7 @@ def init_states(
         module._module_absolute_name = module_name
         module_state = module.init_state(batch_size, sequence_length=sequence_length)
         result[module_name] = module_state
+        print(f"  Initialized state for module {module_name} with tensors: {list(module_state.keys())}")
     return result
 
 
