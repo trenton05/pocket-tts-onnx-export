@@ -35,7 +35,8 @@ class MimiWrapper(nn.Module):
             
             # Increment by the hop factor (25Hz transformer / 12.5Hz latent = 2)
             increment = seq_len * 2
-            increment_steps(self.mimi, model_state, increment=increment)
+            increment_steps(self.mimi.decoder, model_state, increment=increment)
+            increment_steps(self.mimi.decoder_transformer, model_state, increment=increment)
             
             new_flat_state = flatten_state(model_state)
             
@@ -62,7 +63,8 @@ class MimiEncoderWrapper(nn.Module):
         
         seq_len = input.shape[1]
         increment = seq_len * 2
-        increment_steps(self.mimi, model_state, increment=increment)
+        increment_steps(self.mimi.encoder, model_state, increment=increment)
+        increment_steps(self.mimi.encoder_transformer, model_state, increment=increment)
     
         new_flat_state = flatten_state(model_state)
         

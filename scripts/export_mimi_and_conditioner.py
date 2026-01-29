@@ -316,13 +316,15 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     # Initialize state with static size sufficient for expected usage
     # 1000 tokens covers ~40s audio or long text prompts
     STATIC_SEQ_LEN = 100
-    mimi_state = init_states(tts_model.mimi, batch_size=1, sequence_length=STATIC_SEQ_LEN)
-    mimi_structure = get_state_structure(mimi_state)
-    flat_mimi_state = flatten_state(mimi_state)
-    print(f"Initialized Mimi state with length {len(flat_mimi_state)} tensors.")
-    for i in range(len(flat_mimi_state)):
-        print(f"  State tensor {i}: shape {flat_mimi_state[i].shape}, dtype {flat_mimi_state[i].dtype}, value {flat_mimi_state[i].flatten()[0].item() if flat_mimi_state[i].numel() > 0 else ''}")
-
+    encoder_state = {
+        **init_states(tts_model.mimi.encoder, batch_size=1, sequence_length=STATIC_SEQ_LEN)
+        **init_states(tts_model.mimi.encoder_transformer, batch_size=1, sequence_length=STATIC_SEQ_LEN)
+    }
+    encoder_structure = get_state_structure(encoder_state)
+    flat_encoder_state = flatten_state(encoder_state)
+    print(f"Initialized Mimi state with length {len(flat_encoder_state)} tensors.")
+    for i in range(len(flat_encoder_state)):
+        print(f"  State tensor {i}: shape {flat_encoder_state[i].shape}, dtype {flat_encoder_state[i].dtype}, value {flat_encoder_state[i].flatten()[0].item() if flat_encoder_state[i].numel() > 0 else ''}")
     # ---------------------------------------------------------
     # Export Mimi Encoder (audio -> latents)
     # ---------------------------------------------------------
@@ -330,14 +332,14 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     
     mimi_encoder_wrapper = MimiEncoderWrapper(
         tts_model.mimi,
-        mimi_structure,
+        encoder_structure,
     )
     
     # Dummy audio: 1 second at 24kHz
     dummy_audio = torch.randn(1, 1, 1920)
     
-    mimi_input_names = ["input"] + [f"in_state_{i}" for i in range(len(flat_mimi_state))]
-    mimi_output_names = ["output"] + [f"out_state_{i}" for i in range(len(flat_mimi_state))]
+    mimi_input_names = ["input"] + [f"in_state_{i}" for i in range(len(flat_encoder_state))]
+    mimi_output_names = ["output"] + [f"out_state_{i}" for i in range(len(flat_encoder_state))]
     
     encoder_onnx_path = os.path.join(output_dir, "mimi_encoder.onnx")
     
@@ -361,14 +363,23 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     
     mimi_onnx_path = os.path.join(output_dir, "mimi_decoder.onnx")
     
+    decoder_state = {
+        **init_states(tts_model.mimi.decoder, batch_size=1, sequence_length=STATIC_SEQ_LEN),
+        **init_states(tts_model.mimi.decoder_transformer, batch_size=1, sequence_length=STATIC_SEQ_LEN)
+    }
+    decoder_structure = get_state_structure(decoder_state)
+    flat_decoder_state = flatten_state(decoder_state)
+    print(f"Initialized Mimi state with length {len(flat_decoder_state)} tensors.")
+    for i in range(len(flat_decoder_state)):
+        print(f"  State tensor {i}: shape {flat_decoder_state[i].shape}, dtype {flat_decoder_state[i].dtype}, value {flat_decoder_state[i].flatten()[0].item() if flat_decoder_state[i].numel() > 0 else ''}")
     
     mimi_wrapper = MimiWrapper(
         tts_model.mimi, 
-        mimi_structure,
+        decoder_structure,
     )
     
     dummy_latent = torch.randint(0, 2048, (1, 8, 1))
-    mimi_args = (dummy_latent, *flat_mimi_state)
+    mimi_args = (dummy_latent, *flat_decoder_state)
     
     # Mimi dynamic axes
     mimi_dynamic_axes = {
@@ -395,9 +406,6 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
     
     encoder_path = os.path.join(output_dir, "mimi_encoder.onnx")
     conditioner_path = os.path.join(output_dir, "text_conditioner.onnx")
-    
-    mimi_state = init_states(tts_model.mimi, batch_size=1, sequence_length=100)
-    flat_mimi_state = flatten_state(mimi_state)
 
     if os.path.exists(encoder_path):
         
@@ -406,6 +414,12 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         # ---------------------------------------------------------
         print("Verifying Mimi Encoder...")
         ort_encoder = ort.InferenceSession(encoder_path)
+        
+        mimi_state = {
+            **init_states(tts_model.mimi.encoder, batch_size=1, sequence_length=100),
+            **init_states(tts_model.mimi.encoder_transformer, batch_size=1, sequence_length=100)
+        }
+        flat_mimi_state = flatten_state(mimi_state)
         
         # Test audio input
         test_audio = torch.randn(1, 1, 1920)  # one frame
@@ -449,6 +463,11 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         # ---------------------------------------------------------
         ort_session_mimi = ort.InferenceSession(mimi_path)
         
+        mimi_state = {
+            **init_states(tts_model.mimi.decoder, batch_size=1, sequence_length=100),
+            **init_states(tts_model.mimi.decoder_transformer, batch_size=1, sequence_length=100)
+        }
+        flat_mimi_state = flatten_state(mimi_state)
         
         latent = torch.randint(0, 2048, (1, 8, 1))
         latent2 = torch.randint(0, 2048, (1, 8, 1))
