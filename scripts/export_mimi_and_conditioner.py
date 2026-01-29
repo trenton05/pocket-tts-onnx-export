@@ -359,34 +359,34 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     # ---------------------------------------------------------
     print("Exporting Mimi...")
     
-    
-    
-    mimi_wrapper = MimiWrapper(
-        tts_model.mimi, 
-        mimi_structure,
-    )
-    
-    dummy_latent = torch.randint(0, 2048, (1, 8, 1))
-    mimi_args = (dummy_latent, *flat_mimi_state)
-    
-    # Mimi dynamic axes
-    mimi_dynamic_axes = {
-        "input": {1: "seq_len"}
-    }
-    
     mimi_onnx_path = os.path.join(output_dir, "mimi_decoder.onnx")
     
-    torch.onnx.export(
-        mimi_wrapper,
-        mimi_args,
-        mimi_onnx_path,
-        input_names=mimi_input_names,
-        output_names=mimi_output_names,
-        opset_version=18,
-        dynamo=False,
-        external_data=False,
-    )
-    print(f"Mimi exported to {mimi_onnx_path}")
+    
+    # mimi_wrapper = MimiWrapper(
+    #     tts_model.mimi, 
+    #     mimi_structure,
+    # )
+    
+    # dummy_latent = torch.randint(0, 2048, (1, 8, 1))
+    # mimi_args = (dummy_latent, *flat_mimi_state)
+    
+    # # Mimi dynamic axes
+    # mimi_dynamic_axes = {
+    #     "input": {1: "seq_len"}
+    # }
+    
+    
+    # torch.onnx.export(
+    #     mimi_wrapper,
+    #     mimi_args,
+    #     mimi_onnx_path,
+    #     input_names=mimi_input_names,
+    #     output_names=mimi_output_names,
+    #     opset_version=18,
+    #     dynamo=False,
+    #     external_data=False,
+    # )
+    # print(f"Mimi exported to {mimi_onnx_path}")
     
     return mimi_onnx_path, tts_model
 
@@ -443,54 +443,54 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         )
         print("Mimi Encoder output matches!")
     
-    if mimi_path and os.path.exists(mimi_path):
-        # ---------------------------------------------------------
-        # Verify Mimi
-        # ---------------------------------------------------------
-        ort_session_mimi = ort.InferenceSession(mimi_path)
+    # if mimi_path and os.path.exists(mimi_path):
+    #     # ---------------------------------------------------------
+    #     # Verify Mimi
+    #     # ---------------------------------------------------------
+    #     ort_session_mimi = ort.InferenceSession(mimi_path)
         
         
-        latent = torch.randint(0, 2048, (1, 8, 1))
-        latent2 = torch.randint(0, 2048, (1, 8, 1))
+    #     latent = torch.randint(0, 2048, (1, 8, 1))
+    #     latent2 = torch.randint(0, 2048, (1, 8, 1))
         
-        # PyTorch run
-        mimi_wrapper = MimiWrapper(
-            tts_model.mimi, 
-            get_state_structure(mimi_state),
-        )
-        with torch.no_grad():
-            (pt_mimi_out, *new_state) = mimi_wrapper.forward(latent, *flat_mimi_state)
-            (pt_mimi_out, *new_state) = mimi_wrapper.forward(latent2, *new_state)
+    #     # PyTorch run
+    #     mimi_wrapper = MimiWrapper(
+    #         tts_model.mimi, 
+    #         get_state_structure(mimi_state),
+    #     )
+    #     with torch.no_grad():
+    #         (pt_mimi_out, *new_state) = mimi_wrapper.forward(latent, *flat_mimi_state)
+    #         (pt_mimi_out, *new_state) = mimi_wrapper.forward(latent2, *new_state)
 
-        pt_audio = pt_mimi_out.numpy()
-        pt_mimi_states = [x.numpy() for x in new_state]
+    #     pt_audio = pt_mimi_out.numpy()
+    #     pt_mimi_states = [x.numpy() for x in new_state]
         
-        # ONNX run
-        ort_mimi_inputs = {
-            "input": latent.numpy()
-        }
-        for i, state_tensor in enumerate(flat_mimi_state):
-            ort_mimi_inputs[f"in_state_{i}"] = state_tensor.numpy()
+    #     # ONNX run
+    #     ort_mimi_inputs = {
+    #         "input": latent.numpy()
+    #     }
+    #     for i, state_tensor in enumerate(flat_mimi_state):
+    #         ort_mimi_inputs[f"in_state_{i}"] = state_tensor.numpy()
             
-        ort_mimi_outs = ort_session_mimi.run(None, ort_mimi_inputs)
+    #     ort_mimi_outs = ort_session_mimi.run(None, ort_mimi_inputs)
         
-        ort_mimi_inputs = { "input": latent2.numpy() }
-        for i, state_tensor in enumerate(flat_mimi_state):
-            ort_mimi_inputs[f"in_state_{i}"] = ort_mimi_outs[i + 1]
+    #     ort_mimi_inputs = { "input": latent2.numpy() }
+    #     for i, state_tensor in enumerate(flat_mimi_state):
+    #         ort_mimi_inputs[f"in_state_{i}"] = ort_mimi_outs[i + 1]
 
-        ort_mimi_outs = ort_session_mimi.run(None, ort_mimi_inputs)
+    #     ort_mimi_outs = ort_session_mimi.run(None, ort_mimi_inputs)
 
-        onnx_audio = ort_mimi_outs[0]
-        onnx_mimi_states = ort_mimi_outs[1:]
+    #     onnx_audio = ort_mimi_outs[0]
+    #     onnx_mimi_states = ort_mimi_outs[1:]
         
-        np.testing.assert_allclose(pt_audio, onnx_audio, rtol=1e-4, atol=1e-4)
-        print("Mimi audio output matches!")
+    #     np.testing.assert_allclose(pt_audio, onnx_audio, rtol=1e-4, atol=1e-4)
+    #     print("Mimi audio output matches!")
         
-        for i, (pt_s, onnx_s) in enumerate(zip(pt_mimi_states, onnx_mimi_states)):
-            np.testing.assert_allclose(pt_s, onnx_s, rtol=1e-4, atol=1e-4)
-        print("Mimi states match!")
+    #     for i, (pt_s, onnx_s) in enumerate(zip(pt_mimi_states, onnx_mimi_states)):
+    #         np.testing.assert_allclose(pt_s, onnx_s, rtol=1e-4, atol=1e-4)
+    #     print("Mimi states match!")
         
-        print("Verification successful!")
+    #     print("Verification successful!")
 
 def main():
     torch.manual_seed(42)
