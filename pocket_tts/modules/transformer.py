@@ -103,10 +103,11 @@ class StreamingMultiheadAttention(StatefulModule):
     def forward(self, query: torch.Tensor, model_state: dict | None):
         state = self.check_model_state(model_state)
 
-        q = self.q_proj(query)
-        k = self.k_proj(query)
-        v = self.v_proj(query)
-        projected = torch.cat([q, k, v], dim=2)
+        projected = torch.cat([
+            self.q_proj(query),
+            self.k_proj(query),
+            self.v_proj(query),
+        ], dim=2)
 
         # Reshape from (b, t, p*h*d) to (b, t, p, h, d) where p=3, h=num_heads
         b, t, _ = projected.shape
