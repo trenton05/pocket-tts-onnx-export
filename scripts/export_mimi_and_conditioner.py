@@ -348,7 +348,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         input_names=mimi_input_names,
         output_names=mimi_output_names,
         opset_version=18,
-        dynamo=False,
+        dynamo=True,
         external_data=False
     )
     print(f"Mimi Encoder exported to {encoder_onnx_path}")
@@ -362,31 +362,31 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     mimi_onnx_path = os.path.join(output_dir, "mimi_decoder.onnx")
     
     
-    # mimi_wrapper = MimiWrapper(
-    #     tts_model.mimi, 
-    #     mimi_structure,
-    # )
+    mimi_wrapper = MimiWrapper(
+        tts_model.mimi, 
+        mimi_structure,
+    )
     
-    # dummy_latent = torch.randint(0, 2048, (1, 8, 1))
-    # mimi_args = (dummy_latent, *flat_mimi_state)
+    dummy_latent = torch.randint(0, 2048, (1, 8, 1))
+    mimi_args = (dummy_latent, *flat_mimi_state)
     
-    # # Mimi dynamic axes
-    # mimi_dynamic_axes = {
-    #     "input": {1: "seq_len"}
-    # }
+    # Mimi dynamic axes
+    mimi_dynamic_axes = {
+        "input": {1: "seq_len"}
+    }
     
     
-    # torch.onnx.export(
-    #     mimi_wrapper,
-    #     mimi_args,
-    #     mimi_onnx_path,
-    #     input_names=mimi_input_names,
-    #     output_names=mimi_output_names,
-    #     opset_version=18,
-    #     dynamo=False,
-    #     external_data=False,
-    # )
-    # print(f"Mimi exported to {mimi_onnx_path}")
+    torch.onnx.export(
+        mimi_wrapper,
+        mimi_args,
+        mimi_onnx_path,
+        input_names=mimi_input_names,
+        output_names=mimi_output_names,
+        opset_version=18,
+        dynamo=True,
+        external_data=False,
+    )
+    print(f"Mimi exported to {mimi_onnx_path}")
     
     return mimi_onnx_path, tts_model
 
