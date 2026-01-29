@@ -1,12 +1,12 @@
 
 import torch
 import torch.nn as nn
-from pocket_tts.models.mimi import MimiModel
+from pocket_tts.models.mimi import MimiDecoder, MimiEncoder
 from onnx_export.export_utils import unflatten_state, flatten_state
 from pocket_tts.modules.stateful_module import increment_steps
 
 class MimiWrapper(nn.Module):
-    def __init__(self, mimi: MimiModel, state_structure):
+    def __init__(self, mimi: MimiDecoder, state_structure):
         super().__init__()
         self.mimi = mimi
         self.state_structure = state_structure
@@ -48,7 +48,7 @@ class MimiWrapper(nn.Module):
 
 class MimiEncoderWrapper(nn.Module):
     """Wrapper for Mimi encoder that takes raw audio and returns latent embeddings."""
-    def __init__(self, mimi: MimiModel, state_structure):
+    def __init__(self, mimi: MimiEncoder, state_structure):
         super().__init__()
         self.mimi = mimi
         self.state_structure = state_structure

@@ -12,24 +12,88 @@ from pocket_tts.modules.seanet import SEANetDecoder, SEANetEncoder
 logger = logging.getLogger()
 
 
-class MimiModel(nn.Module):
+class MimiDecoder(nn.Module):
     def __init__(
         self,
-        encoder: SEANetEncoder,
         decoder: SEANetDecoder,
         quantizer: MimiSplitResidualVectorQuantizer,
         frame_rate: float,
         encoder_frame_rate: float,
         sample_rate: int,
         channels: int,
-        encoder_transformer: ProjectedTransformer,
         decoder_transformer: ProjectedTransformer,
     ):
         super().__init__()
-        self.encoder = encoder
         self.decoder = decoder
-        self.encoder_transformer = encoder_transformer
         self.decoder_transformer = decoder_transformer
+        self.quantizer = quantizer
+        self.frame_rate = frame_rate
+        self.sample_rate = sample_rate
+        self.channels = channels
+        self.encoder_frame_rate = encoder_frame_rate
+
+        # We will need the dimension for the resampling. In general the encoder will be a SeanetEncoder
+        # which exposes a `dimension` attribute.
+        dimension = decoder.dimension
+        assert isinstance(dimension, int), (
+            f"Dimension should be int, got {dimension} of type {type(dimension)}."
+        )
+        self.dimension = dimension
+
+        if encoder_frame_rate != frame_rate:
+            assert self.encoder_frame_rate > self.frame_rate, "Cannot upsample with conv."
+            downsample_stride = self.encoder_frame_rate / self.frame_rate
+            assert downsample_stride == int(downsample_stride), (
+                f"Only integer strides are supported, got {downsample_stride}"
+            )
+            downsample_stride = int(downsample_stride)
+            self.upsample = StreamingConvTranspose1d(
+                dimension,
+                dimension,
+                kernel_size=2 * downsample_stride,
+                stride=downsample_stride,
+                groups=dimension,
+                bias=False,
+            )
+            # ConvTrUpsample1d(int(downsample_stride), dimension=dimension)
+
+    @property
+    def frame_size(self) -> int:
+        return int(self.sample_rate / self.frame_rate)
+
+    def _to_encoder_framerate(self, x: torch.Tensor, mimi_state) -> torch.Tensor:
+        # Convert from overall framerate to the encoder frame rate.
+        _, _, length = x.shape
+        frame_rate = self.encoder_frame_rate
+        new_frame_rate = self.frame_rate
+        if frame_rate == new_frame_rate:
+            return x
+        return self.upsample(x, mimi_state)
+
+    def forward(self, x: torch.Tensor):
+        raise NotImplementedError()
+
+    def decode_from_latent(self, latent: torch.Tensor, mimi_state) -> torch.Tensor:
+        emb = self._to_encoder_framerate(latent, mimi_state)
+        (emb,) = self.decoder_transformer(emb, mimi_state)
+        out = self.decoder(emb, mimi_state)
+        # out contains extra padding added by the encoder and decoder
+        return out
+
+class MimiEncoder(nn.Module):
+    def __init__(
+        self,
+        encoder: SEANetEncoder,
+        quantizer: MimiSplitResidualVectorQuantizer,
+        frame_rate: float,
+        encoder_frame_rate: float,
+        sample_rate: int,
+        channels: int,
+        encoder_transformer: ProjectedTransformer,
+    ):
+        super().__init__()
+        self.encoder = encoder
+        self.encoder_transformer = encoder_transformer
         self.quantizer = quantizer
         self.frame_rate = frame_rate
         self.sample_rate = sample_rate
@@ -61,15 +125,6 @@ class MimiModel(nn.Module):
                 pad_mode="replicate",
             )
             # ConvDownsample1d(int(downsample_stride), dimension=dimension)
-            self.upsample = StreamingConvTranspose1d(
-                dimension,
-                dimension,
-                kernel_size=2 * downsample_stride,
-                stride=downsample_stride,
-                groups=dimension,
-                bias=False,
-            )
-            # ConvTrUpsample1d(int(downsample_stride), dimension=dimension)
 
     @property
     def frame_size(self) -> int:
@@ -84,24 +139,8 @@ class MimiModel(nn.Module):
             return x
         return self.downsample(x, mimi_state)
 
-    def _to_encoder_framerate(self, x: torch.Tensor, mimi_state) -> torch.Tensor:
-        # Convert from overall framerate to the encoder frame rate.
-        _, _, length = x.shape
-        frame_rate = self.encoder_frame_rate
-        new_frame_rate = self.frame_rate
-        if frame_rate == new_frame_rate:
-            return x
-        return self.upsample(x, mimi_state)
-
     def forward(self, x: torch.Tensor):
         raise NotImplementedError()
-
-    def decode_from_latent(self, latent: torch.Tensor, mimi_state) -> torch.Tensor:
-        emb = self._to_encoder_framerate(latent, mimi_state)
-        (emb,) = self.decoder_transformer(emb, mimi_state)
-        out = self.decoder(emb, mimi_state)
-        # out contains extra padding added by the encoder and decoder
-        return out
 
     def encode_to_latent(self, x: torch.Tensor, model_state: dict = None) -> torch.Tensor:
         """Projects a batch of waveforms to unquantized latent space.

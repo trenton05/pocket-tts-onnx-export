@@ -27,7 +27,7 @@ from pocket_tts.default_parameters import (
     DEFAULT_VARIANT,
 )
 from pocket_tts.models.flow_lm import FlowLMModel
-from pocket_tts.models.mimi import MimiModel
+from pocket_tts.models.mimi import MimiDecoder, MimiEncoder
 from pocket_tts.modules import mimi_transformer
 from pocket_tts.modules.dummy_quantizer import MimiSplitResidualVectorQuantizer
 from pocket_tts.modules.seanet import SEANetDecoder, SEANetEncoder
@@ -95,21 +95,30 @@ class TTSModel(nn.Module):
         decoder_transformer = mimi_transformer.ProjectedTransformer()
         quantizer = MimiSplitResidualVectorQuantizer()
 
-        tts_model.mimi = MimiModel(
+        tts_model.mimi_encoder = MimiEncoder(
             encoder,
-            decoder,
             quantizer,
             channels=1,
             sample_rate=24000,
             frame_rate=12.5,
             encoder_frame_rate=24000 / encoder.hop_length,
             encoder_transformer=encoder_transformer,
+        ).to(device="cpu")
+
+        tts_model.mimi_decoder = MimiDecoder(
+            decoder,
+            quantizer,
+            channels=1,
+            sample_rate=24000,
+            frame_rate=12.5,
+            encoder_frame_rate=24000 / encoder.hop_length,
             decoder_transformer=decoder_transformer,
         ).to(device="cpu")
 
         # Load mimi weights from the config safetensors file with complete mapping for strict loading
 
-        tts_model.mimi.eval()
+        tts_model.mimi_encoder.eval()
+        tts_model.mimi_decoder.eval()
         # tts_model.to(dtype=torch.float32)
 
         size_in_mb = size_of_dict(tts_model.state_dict()) // 1e6
