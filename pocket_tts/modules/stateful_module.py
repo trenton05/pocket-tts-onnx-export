@@ -7,7 +7,6 @@ from torch import nn
 def init_states(
     model: nn.Module, batch_size: int, sequence_length: int, result: dict[str, dict[str, torch.Tensor]] = {}
 ) -> dict[str, dict[str, torch.Tensor]]:
-    result = {}
     for module_name, module in model.named_modules():
         if not isinstance(module, StatefulModule):
             continue
