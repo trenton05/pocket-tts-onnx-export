@@ -318,6 +318,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     STATIC_SEQ_LEN = 100
     encoder_state = init_states(tts_model.mimi.encoder, batch_size=1, sequence_length=STATIC_SEQ_LEN)
     init_states(tts_model.mimi.encoder_transformer, batch_size=1, sequence_length=STATIC_SEQ_LEN, result=encoder_state)
+    init_states(tts_model.mimi.downsample, batch_size=1, sequence_length=STATIC_SEQ_LEN, result=encoder_state)
 
     encoder_structure = get_state_structure(encoder_state)
     flat_encoder_state = flatten_state(encoder_state)
@@ -364,6 +365,8 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     
     decoder_state = init_states(tts_model.mimi.decoder, batch_size=1, sequence_length=STATIC_SEQ_LEN)
     init_states(tts_model.mimi.decoder_transformer, batch_size=1, sequence_length=STATIC_SEQ_LEN, result=decoder_state)
+    init_states(tts_model.mimi.upsample, batch_size=1, sequence_length=STATIC_SEQ_LEN, result=decoder_state)
+
     decoder_structure = get_state_structure(decoder_state)
     flat_decoder_state = flatten_state(decoder_state)
     print(f"Initialized Mimi state with length {len(flat_decoder_state)} tensors.")
@@ -414,6 +417,8 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         
         mimi_state = init_states(tts_model.mimi.encoder, batch_size=1, sequence_length=100)
         init_states(tts_model.mimi.encoder_transformer, batch_size=1, sequence_length=100, result=mimi_state)
+        init_states(tts_model.mimi.downsample, batch_size=1, sequence_length=100, result=mimi_state)
+
         flat_mimi_state = flatten_state(mimi_state)
         
         # Test audio input
@@ -460,6 +465,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         
         mimi_state = init_states(tts_model.mimi.decoder, batch_size=1, sequence_length=100)
         init_states(tts_model.mimi.decoder_transformer, batch_size=1, sequence_length=100, result=mimi_state)
+        init_states(tts_model.mimi.upsample, batch_size=1, sequence_length=100, result=mimi_state)
         flat_mimi_state = flatten_state(mimi_state)
         
         latent = torch.randint(0, 2048, (1, 8, 1))
