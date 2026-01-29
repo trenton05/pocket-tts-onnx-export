@@ -350,7 +350,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         encoder_onnx_path,
         input_names=encoder_input_names,
         output_names=encoder_output_names,
-        opset_version=21,
+        opset_version=18,
         dynamo=False,
         external_data=False
     )
@@ -395,7 +395,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         mimi_onnx_path,
         input_names=decoder_input_names,
         output_names=decoder_output_names,
-        opset_version=21,
+        opset_version=18,
         dynamo=False,
         external_data=False,
     )
