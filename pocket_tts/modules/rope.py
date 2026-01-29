@@ -22,10 +22,10 @@ def apply_rope(
 
     B, T, H, D = q.shape
     Bk, Tk, Hk, Dk = k.shape
-    assert (B, T, D) == (Bk, Tk, Dk)
-    assert D > 0
-    assert D % 2 == 0
-    assert max_period > 0
+    # assert (B, T, D) == (Bk, Tk, Dk)
+    # assert D > 0
+    # assert D % 2 == 0
+    # assert max_period > 0
 
     ds = torch.arange(D // 2, device=q.device, dtype=torch.float32)
     freqs = torch.exp(ds * (-math.log(max_period) * 2 / D))

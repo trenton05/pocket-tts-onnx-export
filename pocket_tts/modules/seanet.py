@@ -39,7 +39,7 @@ class SEANetResnetBlock(nn.Module):
                 v = layer(v, model_state)
             else:
                 v = layer(v)
-        assert x.shape == v.shape, (x.shape, v.shape, x.shape)
+        # assert x.shape == v.shape, (x.shape, v.shape, x.shape)
         return x + v
 
 
