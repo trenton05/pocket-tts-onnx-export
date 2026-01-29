@@ -237,6 +237,7 @@ class ProjectedTransformer(nn.Module):
         self.rope = RotaryEmbedding(max_period=max_period)
 
         self.layers = nn.ModuleList()
+        self.num_layers = num_layers
         for _ in range(num_layers):
             self.layers.append(
                 StreamingTransformerLayer(
@@ -255,7 +256,7 @@ class ProjectedTransformer(nn.Module):
         if self.input_proj is not None:
             x = self.input_proj(x)
 
-        for i in range(self.layers.len()):
+        for i in range(self.num_layers):
             x = self.layers[i](x, model_state)
             if i == 3:
                 return x
