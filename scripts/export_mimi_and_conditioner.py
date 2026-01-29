@@ -407,8 +407,8 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
 def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
     print("Verifying export...")
     
-    encoder_path = os.path.join(output_dir, "mimi_encoder_fp16.onnx")
-    decoder_path = os.path.join(output_dir, "mimi_decoder_fp16.onnx")
+    encoder_path = os.path.join(output_dir, "mimi_encoder.onnx")
+    decoder_path = os.path.join(output_dir, "mimi_decoder.onnx")
     conditioner_path = os.path.join(output_dir, "text_conditioner.onnx")
 
     if os.path.exists(encoder_path):
