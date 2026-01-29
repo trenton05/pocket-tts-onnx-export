@@ -11,7 +11,7 @@ class MimiWrapper(nn.Module):
         self.mimi = mimi
         self.state_structure = state_structure
         
-    def forward(self, input, flat_state):
+    def forward(self, input, *flat_state):
         try:
             # Un-normalize latent: scale and shift back
             # mimi_decoding_input = latent * self.emb_std + self.emb_mean
@@ -52,7 +52,7 @@ class MimiEncoderWrapper(nn.Module):
         self.mimi = mimi
         self.state_structure = state_structure
 
-    def forward(self, input, flat_state):
+    def forward(self, input, *flat_state):
         model_state, _ = unflatten_state(flat_state, self.state_structure)
 
         # audio: [B, C, T] -> latent: [B, T', D]

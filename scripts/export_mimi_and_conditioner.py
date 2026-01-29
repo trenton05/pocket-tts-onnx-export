@@ -343,7 +343,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     
     torch.onnx.export(
         mimi_encoder_wrapper,
-        (dummy_audio, flat_mimi_state),
+        (dummy_audio, *flat_mimi_state),
         encoder_onnx_path,
         input_names=mimi_input_names,
         output_names=mimi_output_names,
@@ -367,7 +367,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     )
     
     dummy_latent = torch.randint(0, 2048, (1, 8, 1))
-    mimi_args = (dummy_latent, flat_mimi_state)
+    mimi_args = (dummy_latent, *flat_mimi_state)
     
     # Mimi dynamic axes
     mimi_dynamic_axes = {
@@ -416,8 +416,8 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
             mimi_state,
         )
         with torch.no_grad():
-            (pt_encoder_out, new_state) = encoder_wrapper.forward(test_audio, flat_mimi_state)
-            (pt_encoder_out, new_state) = encoder_wrapper.forward(test_audio2, new_state)
+            (pt_encoder_out, *new_state) = encoder_wrapper.forward(test_audio, *flat_mimi_state)
+            (pt_encoder_out, *new_state) = encoder_wrapper.forward(test_audio2, *new_state)
         
         # ONNX run
         ort_mimi_inputs = {
@@ -432,7 +432,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         ort_mimi_inputs = { "input": test_audio2.numpy() }
 
         for i, state_tensor in enumerate(flat_mimi_state):
-            ort_mimi_inputs[f"in_state_{i}"] = onnx_encoder_out["out_state_{i}"]
+            ort_mimi_inputs[f"in_state_{i}"] = onnx_encoder_out[i + 1]
 
         onnx_encoder_out = ort_encoder.run(None, ort_mimi_inputs)
         
@@ -450,6 +450,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         
         
         latent = torch.randint(0, 2048, (1, 8, 1))
+        latent2 = torch.randint(0, 2048, (1, 8, 1))
         
         # PyTorch run
         mimi_wrapper = MimiWrapper(
@@ -457,8 +458,9 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
             get_state_structure(mimi_state),
         )
         with torch.no_grad():
-            pt_mimi_out = mimi_wrapper(latent, flat_mimi_state)
-            
+            (pt_mimi_out, *new_state) = mimi_wrapper.forward(latent, *flat_mimi_state)
+            (pt_mimi_out, *new_state) = mimi_wrapper.forward(latent2, *new_state)
+
         pt_audio = pt_mimi_out[0].numpy()
         pt_mimi_states = [x.numpy() for x in pt_mimi_out[1:]]
         
@@ -471,6 +473,12 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
             
         ort_mimi_outs = ort_session_mimi.run(None, ort_mimi_inputs)
         
+        ort_mimi_inputs = { "input": latent2.numpy() }
+        for i, state_tensor in enumerate(flat_mimi_state):
+            ort_mimi_inputs[f"in_state_{i}"] = ort_mimi_outs[i + 1]
+
+        ort_mimi_outs = ort_session_mimi.run(None, ort_mimi_inputs)
+
         onnx_audio = ort_mimi_outs[0]
         onnx_mimi_states = ort_mimi_outs[1:]
         
