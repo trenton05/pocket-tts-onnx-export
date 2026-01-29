@@ -2,83 +2,83 @@ import torch
 from torch import nn
 
 
-# class MimiEuclideanCodebook(nn.Module):
-#     """Codebook with Euclidean distance."""
-
-#     def __init__(self, epsilon: float = 1e-5):
-#         super().__init__()
-#         embed = torch.zeros(2048, 256)
-
-#         self.codebook_size = 2048
-
-#         self.register_buffer("initialized", torch.tensor([True], dtype=torch.float32))
-#         self.register_buffer("cluster_usage", torch.ones(2048))
-#         self.register_buffer("embed_sum", embed)
-#         self._embed = None
-#         self.epsilon = epsilon
-
-#     @property
-#     def embed(self) -> torch.Tensor:
-#         # if self._embed is None:
-#         #     self._embed = self.embed_sum / self.cluster_usage.clamp(min=self.epsilon)[:, None]
-#         # return self._embed
-#         return self.embed_sum / self.cluster_usage.clamp(min=self.epsilon)[:, None]
-
-#     def quantize(self, hidden_states):
-#         # Projects each vector in `hidden_states` over the nearest centroid and return its index.
-#         # `hidden_states` should be `[N, D]` with `N` the number of input vectors and `D` the dimension.
-#         dists = torch.cdist(hidden_states[None].float(), self.embed[None].float(), p=2)[0]
-#         embed_ind = dists.argmin(dim=-1)
-#         return embed_ind
-
-#     # Copied from transformers.models.encodec.modeling_encodec.EncodecEuclideanCodebook.encode
-#     def encode(self, hidden_states):
-#         shape = hidden_states.shape
-#         # pre-process
-#         hidden_states = hidden_states.reshape((-1, shape[-1]))
-#         # quantize
-#         embed_ind = self.quantize(hidden_states)
-#         # post-process
-#         embed_ind = embed_ind.view(*shape[:-1])
-#         return embed_ind
-
-#     # Copied from transformers.models.encodec.modeling_encodec.EncodecEuclideanCodebook.decode
-#     def decode(self, embed_ind):
-#         quantize = nn.functional.embedding(embed_ind, self.embed)
-#         return quantize
-
 class MimiEuclideanCodebook(nn.Module):
-    def __init__(self):
+    """Codebook with Euclidean distance."""
+
+    def __init__(self, epsilon: float = 1e-5):
         super().__init__()
-        self._epsilon = torch.tensor([1e-5], dtype=torch.float32)
+        embed = torch.zeros(2048, 256)
+
+        self.codebook_size = 2048
+
         self.register_buffer("initialized", torch.tensor([True], dtype=torch.float32))
         self.register_buffer("cluster_usage", torch.ones(2048))
-        self.register_buffer("embed_sum", torch.zeros(2048, 256))
+        self.register_buffer("embed_sum", embed)
+        self._embed = None
+        self.epsilon = epsilon
 
-    def update(self, parameters: dict) -> nn.Module:
-        super().update(parameters)
-        cluster_usage = torch.maximum(self.cluster_usage, self._epsilon)[:, None]
-        embedding = self.embed_sum / cluster_usage
-        c2 = embedding.square().sum(axis=-1) / 2
-        return self
+    @property
+    def embed(self) -> torch.Tensor:
+        # if self._embed is None:
+        #     self._embed = self.embed_sum / self.cluster_usage.clamp(min=self.epsilon)[:, None]
+        # return self._embed
+        return self.embed_sum / self.cluster_usage.clamp(min=self.epsilon)[:, None]
 
-    def encode(self, xs: torch.Tensor) -> torch.Tensor:
-        cluster_usage = torch.maximum(self.cluster_usage, self._epsilon)[:, None]
-        embedding = self.embed_sum / cluster_usage
-        c2 = embedding.square().sum(axis=-1) / 2
+    def quantize(self, hidden_states):
+        # Projects each vector in `hidden_states` over the nearest centroid and return its index.
+        # `hidden_states` should be `[N, D]` with `N` the number of input vectors and `D` the dimension.
+        dists = torch.cdist(hidden_states[None].float(), self.embed[None].float(), p=2)[0]
+        embed_ind = dists.argmin(dim=-1)
+        return embed_ind
 
-        target_shape = xs.shape[:-1]
-        xs = xs.flatten(end_dim=-2)
-        dot_prod = xs @ embedding.swapaxes(-1, -2)
-        return (c2 - dot_prod).argmin(axis=-1).reshape(target_shape)
+    # Copied from transformers.models.encodec.modeling_encodec.EncodecEuclideanCodebook.encode
+    def encode(self, hidden_states):
+        shape = hidden_states.shape
+        # pre-process
+        hidden_states = hidden_states.reshape((-1, shape[-1]))
+        # quantize
+        embed_ind = self.quantize(hidden_states)
+        # post-process
+        embed_ind = embed_ind.view(*shape[:-1])
+        return embed_ind
 
-    def decode(self, xs: torch.Tensor) -> torch.Tensor:
-        target_shape = list(xs.shape) + [256]
+    # Copied from transformers.models.encodec.modeling_encodec.EncodecEuclideanCodebook.decode
+    def decode(self, embed_ind):
+        quantize = nn.functional.embedding(embed_ind, self.embed)
+        return quantize
 
-        cluster_usage = torch.maximum(self.cluster_usage, self._epsilon)[:, None]
-        embedding = self.embed_sum / cluster_usage
-        return nn.functional.embedding(xs, embedding)
-        # return torch.take(embedding, xs.flatten()).reshape(target_shape)
+# class MimiEuclideanCodebook(nn.Module):
+#     def __init__(self):
+#         super().__init__()
+#         self._epsilon = torch.tensor([1e-5], dtype=torch.float32)
+#         self.register_buffer("initialized", torch.tensor([True], dtype=torch.float32))
+#         self.register_buffer("cluster_usage", torch.ones(2048))
+#         self.register_buffer("embed_sum", torch.zeros(2048, 256))
+
+#     def update(self, parameters: dict) -> nn.Module:
+#         super().update(parameters)
+#         cluster_usage = torch.maximum(self.cluster_usage, self._epsilon)[:, None]
+#         embedding = self.embed_sum / cluster_usage
+#         c2 = embedding.square().sum(axis=-1) / 2
+#         return self
+
+#     def encode(self, xs: torch.Tensor) -> torch.Tensor:
+#         cluster_usage = torch.maximum(self.cluster_usage, self._epsilon)[:, None]
+#         embedding = self.embed_sum / cluster_usage
+#         c2 = embedding.square().sum(axis=-1) / 2
+
+#         target_shape = xs.shape[:-1]
+#         xs = xs.flatten(end_dim=-2)
+#         dot_prod = xs @ embedding.swapaxes(-1, -2)
+#         return (c2 - dot_prod).argmin(axis=-1).reshape(target_shape)
+
+#     def decode(self, xs: torch.Tensor) -> torch.Tensor:
+#         target_shape = list(xs.shape) + [256]
+
+#         cluster_usage = torch.maximum(self.cluster_usage, self._epsilon)[:, None]
+#         embedding = self.embed_sum / cluster_usage
+#         return nn.functional.embedding(xs, embedding)
+#         # return torch.take(embedding, xs.flatten()).reshape(target_shape)
 
 
 # Copied from transformers.models.encodec.modeling_encodec.EncodecVectorQuantization with Encodec->Mimi
