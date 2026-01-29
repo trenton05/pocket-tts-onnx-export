@@ -458,7 +458,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         # ---------------------------------------------------------
         ort_session_mimi = ort.InferenceSession(mimi_path)
         
-        mimi_state = init_states(tts_model.mimi_decoder, batch_size=1, sequence_length=100)
+        mimi_state = init_states(tts_model.mimi_decoder, batch_size=1, sequence_length=50)
         flat_mimi_state = flatten_state(mimi_state)
         
         latent = torch.randint(0, 2048, (1, 8, 1))
