@@ -437,7 +437,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         onnx_encoder_out = ort_encoder.run(None, ort_mimi_inputs)
         
         np.testing.assert_allclose(
-            pt_encoder_out[0].numpy(), onnx_encoder_out[0], 
+            pt_encoder_out.numpy(), onnx_encoder_out[0], 
             rtol=1e-4, atol=1e-4
         )
         print("Mimi Encoder output matches!")
@@ -461,8 +461,8 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
             (pt_mimi_out, *new_state) = mimi_wrapper.forward(latent, *flat_mimi_state)
             (pt_mimi_out, *new_state) = mimi_wrapper.forward(latent2, *new_state)
 
-        pt_audio = pt_mimi_out[0].numpy()
-        pt_mimi_states = [x.numpy() for x in pt_mimi_out[1:]]
+        pt_audio = pt_mimi_out.numpy()
+        pt_mimi_states = [x.numpy() for x in new_state]
         
         # ONNX run
         ort_mimi_inputs = {
