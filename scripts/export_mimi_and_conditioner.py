@@ -355,7 +355,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         external_data=False
     )
     
-    onnx.save(float16.convert_float_to_float16(onnx.load(encoder_onnx_path), keep_io_types=True), os.path.join(output_dir, "mimi_encoder_fp16.onnx"))
+    # onnx.save(float16.convert_float_to_float16(onnx.load(encoder_onnx_path), keep_io_types=True), os.path.join(output_dir, "mimi_encoder_fp16.onnx"))
     print(f"Mimi Encoder exported to {encoder_onnx_path}")
     
     
@@ -399,7 +399,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         dynamo=True,
         external_data=False,
     )
-    onnx.save(float16.convert_float_to_float16(onnx.load(mimi_onnx_path), keep_io_types=True), os.path.join(output_dir, "mimi_decoder_fp16.onnx"))
+    # onnx.save(float16.convert_float_to_float16(onnx.load(mimi_onnx_path), keep_io_types=True), os.path.join(output_dir, "mimi_decoder_fp16.onnx"))
     print(f"Mimi exported to {mimi_onnx_path}")
     
     return mimi_onnx_path, tts_model
