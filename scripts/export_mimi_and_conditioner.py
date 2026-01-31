@@ -307,8 +307,11 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         state_dict = safetensors.torch.load_file(weights_path)
         try:
             tts_model.mimi_encoder.load_state_dict(state_dict, strict=True)
+        except Exception as e:
+            print(f"Warning: Failed to load specified weights (strict=True): {e}")
+            print("Using default loaded weights.")
+        try:
             tts_model.mimi_decoder.load_state_dict(state_dict, strict=True)
-            tts_model.has_voice_cloning = True
         except Exception as e:
             print(f"Warning: Failed to load specified weights (strict=True): {e}")
             print("Using default loaded weights.")
