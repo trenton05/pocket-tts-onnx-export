@@ -126,6 +126,7 @@ int main() {
             auto start = std::chrono::system_clock::now();
 
             memcpy(encoder_tensors[0].GetTensorMutableData<float>(), inputData, 1920 * sizeof(float));
+            encoder_tensors[0] = Ort::Value::CreateTensor<float>(memory_info, inputData, 1920, encoder_shape, 3);
             encoder.Run(run_options, encoder_inputs.data(), encoder_tensors.data(), encoder_inputs.size(), encoder_outputs.data(), encoder_output_tensors.data(), encoder_output_tensors.size());
 
             int64_t* codes = (int64_t*) encoder_output_tensors[0].GetTensorData<int64_t>();
@@ -133,10 +134,10 @@ int main() {
             for (int i = 1; i < encoder_tensors.size(); i++) {
                 std::swap(encoder_tensors[i], encoder_output_tensors[i]);
             }
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 8; i++) {
                 decoder_codes[i] = codes[i];
             }
-            memcpy(decoder_tensors[0].GetTensorMutableData<int64_t>(), codes, 4 * sizeof(int64_t));
+            decoder_tensors[0] = Ort::Value::CreateTensor<int64_t>(memory_info, decoder_codes, 8, decoder_shape, 3);
             decoder.Run(run_options, decoder_inputs.data(), decoder_tensors.data(), decoder_inputs.size(), decoder_outputs.data(), decoder_output_tensors.data(), decoder_output_tensors.size());
 
             for (int i = 1; i < decoder_tensors.size(); i++) {

@@ -354,7 +354,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         input_names=encoder_input_names,
         output_names=encoder_output_names,
         opset_version=18,
-        dynamic_shape={"input": {2: "seq_len"}},
+        dynamic_shapes={"input": {2: "seq_len"}},
         dynamo=True,
         external_data=False
     )
@@ -395,7 +395,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         input_names=decoder_input_names,
         output_names=decoder_output_names,
         opset_version=18,
-        dynamic_shape={"input": {1: "codebooks"}},
+        dynamic_shapes={"input": {1: "codebooks"}},
         dynamo=True,
         external_data=False,
     )
