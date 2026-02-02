@@ -161,10 +161,10 @@ class MimiSplitResidualVectorQuantizer(nn.Module):
         super().__init__()
         self.codebook_size = 2048
         self.frame_rate = 12.5
-        self.max_num_quantizers = 4
+        self.max_num_quantizers = 32
 
         self.num_semantic_quantizers = 1
-        self.num_acoustic_quantizers = 3
+        self.num_acoustic_quantizers = 31
 
         self.semantic_residual_vector_quantizer = MimiResidualVectorQuantizer(self.num_semantic_quantizers)
         self.acoustic_residual_vector_quantizer = MimiResidualVectorQuantizer(self.num_acoustic_quantizers)

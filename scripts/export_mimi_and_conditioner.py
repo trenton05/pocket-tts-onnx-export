@@ -354,6 +354,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         input_names=encoder_input_names,
         output_names=encoder_output_names,
         opset_version=18,
+        dynamic_shape={"input": {2: "seq_len"}},
         dynamo=True,
         external_data=False
     )
@@ -381,13 +382,8 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         decoder_structure,
     )
     
-    dummy_latent = torch.randint(0, 2048, (1, 4, 1))
+    dummy_latent = torch.randint(0, 2048, (1, 32, 1))
     mimi_args = (dummy_latent, *flat_decoder_state)
-    
-    # Mimi dynamic axes
-    mimi_dynamic_axes = {
-        "input": {1: "seq_len"}
-    }
     
     decoder_input_names = ["input"] + [f"in_state_{i}" for i in range(len(flat_decoder_state))]
     decoder_output_names = ["output"] + [f"out_state_{i}" for i in range(len(flat_decoder_state))]
@@ -399,6 +395,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         input_names=decoder_input_names,
         output_names=decoder_output_names,
         opset_version=18,
+        dynamic_shape={"input": {1: "codebooks"}},
         dynamo=True,
         external_data=False,
     )
@@ -471,8 +468,8 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         mimi_state = init_states(tts_model.mimi_decoder, batch_size=1, sequence_length=25)
         flat_mimi_state = flatten_state(mimi_state)
         
-        latent = torch.randint(0, 2048, (1, 4, 1))
-        latent2 = torch.randint(0, 2048, (1, 4, 1))
+        latent = torch.randint(0, 2048, (1, 32, 1))
+        latent2 = torch.randint(0, 2048, (1, 32, 1))
         
         # PyTorch run
         mimi_wrapper = MimiWrapper(
