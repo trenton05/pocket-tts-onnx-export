@@ -354,8 +354,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         input_names=encoder_input_names,
         output_names=encoder_output_names,
         opset_version=18,
-        dynamic_axes={"input": {2: "seq_len"}},
-        dynamo=False,
+        dynamo=True,
         external_data=False
     )
     
