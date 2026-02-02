@@ -135,13 +135,13 @@ int main() {
             for (int i = 1; i < encoder_tensors.size(); i++) {
                 std::swap(encoder_tensors[i], encoder_output_tensors[i]);
             }
-            for (int i = 0; i < 32; i++) {
-                decoder_codes[i] = i < 6 ? codes[i] : 0;
+            for (int i = 0; i < 16; i++) {
+                decoder_codes[i] = i < 8 ? codes[i] : 0;
             }
-            memcpy(decoder_tensors[0].GetTensorMutableData<int64_t>(), decoder_codes, 32 * sizeof(int64_t));
+            memcpy(decoder_tensors[0].GetTensorMutableData<int64_t>(), decoder_codes, 16 * sizeof(int64_t));
             
             int64_t* mask = (int64_t*) decoder_tensors[1].GetTensorMutableData<int64_t>();
-            for (int i = 0; i < 32; i++) mask[i] = i < 6 ? 1 : 0;
+            for (int i = 0; i < 16; i++) mask[i] = i < 8 ? 1 : 0;
             decoder.Run(run_options, decoder_inputs.data(), decoder_tensors.data(), decoder_inputs.size(), decoder_outputs.data(), decoder_output_tensors.data(), decoder_output_tensors.size());
 
             for (int i = 2; i < decoder_tensors.size(); i++) {
