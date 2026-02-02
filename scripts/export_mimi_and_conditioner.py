@@ -322,7 +322,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     
     # Initialize state with static size sufficient for expected usage
     # 1000 tokens covers ~40s audio or long text prompts
-    STATIC_SEQ_LEN = 250
+    STATIC_SEQ_LEN = 100
     encoder_state = init_states(tts_model.mimi_encoder, batch_size=1, sequence_length=STATIC_SEQ_LEN)
     encoder_structure = get_state_structure(encoder_state)
     flat_encoder_state = flatten_state(encoder_state)
@@ -422,7 +422,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         print("Verifying Mimi Encoder...")
         ort_encoder = ort.InferenceSession(encoder_path)
         
-        mimi_state = init_states(tts_model.mimi_encoder, batch_size=1, sequence_length=250)
+        mimi_state = init_states(tts_model.mimi_encoder, batch_size=1, sequence_length=100)
 
         flat_mimi_state = flatten_state(mimi_state)
         
@@ -468,7 +468,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         # ---------------------------------------------------------
         ort_session_mimi = ort.InferenceSession(decoder_path)
         
-        mimi_state = init_states(tts_model.mimi_decoder, batch_size=1, sequence_length=250)
+        mimi_state = init_states(tts_model.mimi_decoder, batch_size=1, sequence_length=100)
         flat_mimi_state = flatten_state(mimi_state)
         
         latent = torch.randint(0, 2048, (1, 8, 1))

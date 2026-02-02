@@ -1,0 +1,3 @@
+/Users/trenton/git/moshi/pocket-tts-onnx-export/mimi/build/CMakeFiles/mimi.dir
+/Users/trenton/git/moshi/pocket-tts-onnx-export/mimi/build/CMakeFiles/edit_cache.dir
+/Users/trenton/git/moshi/pocket-tts-onnx-export/mimi/build/CMakeFiles/rebuild_cache.dir
