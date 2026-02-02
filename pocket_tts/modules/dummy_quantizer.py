@@ -146,13 +146,13 @@ class MimiResidualVectorQuantizer(nn.Module):
         out_indices = torch.stack(all_indices)
         return out_indices
 
-    def decode(self, codes: torch.Tensor) -> torch.Tensor:
+    def decode(self, codes: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         """Decode the given codes of shape [B, K, T] to the quantized representation."""
         quantized_out = torch.tensor(0.0, device=codes.device)
         codes = codes.transpose(0, 1)
         for i, indices in enumerate(codes):
             layer = self.layers[i]
-            quantized = layer.decode(indices) * torch.cond(indices >= 0, lambda: torch.tensor(1.0, device=codes.device), lambda: torch.tensor(0.0, device=codes.device))
+            quantized = layer.decode(indices) * mask[i]
             quantized_out = quantized_out + quantized
 
         if self.output_proj is not None:
@@ -203,13 +203,12 @@ class MimiSplitResidualVectorQuantizer(nn.Module):
 
         return codes
 
-    def decode(self, codes: torch.Tensor) -> torch.Tensor:
+    def decode(self, codes: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         """Decode the given codes to the quantized representation."""
 
         # The first num_semantic_quantizers codebooks are decoded using the semantic RVQ
-        quantized_out = self.semantic_residual_vector_quantizer.decode(codes[:, : self.num_semantic_quantizers])
-
+        quantized_out = self.semantic_residual_vector_quantizer.decode(codes[:, : self.num_semantic_quantizers], mask[: self.num_semantic_quantizers])
         # The rest of the codebooks are decoded using the acoustic RVQ
         if codes.shape[1] > self.num_semantic_quantizers:
-            quantized_out += self.acoustic_residual_vector_quantizer.decode(codes[:, self.num_semantic_quantizers :])
+            quantized_out += self.acoustic_residual_vector_quantizer.decode(codes[:, self.num_semantic_quantizers :], mask[self.num_semantic_quantizers :])
         return quantized_out

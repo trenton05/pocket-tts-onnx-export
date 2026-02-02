@@ -382,9 +382,10 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     )
     
     dummy_latent = torch.randint(0, 2048, (1, 32, 1))
-    mimi_args = (dummy_latent, *flat_decoder_state)
+    mask = torch.ones(32, dtype=torch.int64)
+    mimi_args = (dummy_latent, mask, *flat_decoder_state)
     
-    decoder_input_names = ["input"] + [f"in_state_{i}" for i in range(len(flat_decoder_state))]
+    decoder_input_names = ["input", "mask"] + [f"in_state_{i}" for i in range(len(flat_decoder_state))]
     decoder_output_names = ["output"] + [f"out_state_{i}" for i in range(len(flat_decoder_state))]
     
     torch.onnx.export(
@@ -468,6 +469,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         
         latent = torch.randint(0, 2048, (1, 32, 1))
         latent2 = torch.randint(0, 2048, (1, 32, 1))
+        mask = torch.ones(32, dtype=torch.int64)
         
         # PyTorch run
         mimi_wrapper = MimiWrapper(
@@ -475,22 +477,23 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
             get_state_structure(mimi_state),
         )
         with torch.no_grad():
-            (pt_mimi_out, *new_state) = mimi_wrapper.forward(latent, *flat_mimi_state)
-            (pt_mimi_out, *new_state) = mimi_wrapper.forward(latent2, *new_state)
+            (pt_mimi_out, *new_state) = mimi_wrapper.forward(latent, mask, *flat_mimi_state)
+            (pt_mimi_out, *new_state) = mimi_wrapper.forward(latent2, mask, *new_state)
 
         pt_audio = pt_mimi_out.numpy()
         pt_mimi_states = [x.numpy() for x in new_state]
         
         # ONNX run
         ort_mimi_inputs = {
-            "input": latent.numpy()
+            "input": latent.numpy(),
+            "mask": mask.numpy()
         }
         for i, state_tensor in enumerate(flat_mimi_state):
             ort_mimi_inputs[f"in_state_{i}"] = state_tensor.numpy()
             
         ort_mimi_outs = ort_session_mimi.run(None, ort_mimi_inputs)
         
-        ort_mimi_inputs = { "input": latent2.numpy() }
+        ort_mimi_inputs = { "input": latent2.numpy(), "mask": mask.numpy() }
         for i, state_tensor in enumerate(flat_mimi_state):
             ort_mimi_inputs[f"in_state_{i}"] = ort_mimi_outs[i + 1]
 
