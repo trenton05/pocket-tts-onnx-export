@@ -149,10 +149,12 @@ class MimiResidualVectorQuantizer(nn.Module):
     def decode(self, codes: torch.Tensor) -> torch.Tensor:
         """Decode the given codes of shape [B, K, T] to the quantized representation."""
         quantized_out = torch.tensor(0.0, device=codes.device)
+        zero_tensor = torch.tensor(0.0, device=codes.device)
+        one_tensor = torch.tensor(1.0, device=codes.device)
         codes = codes.transpose(0, 1)
         for i, indices in enumerate(codes):
             layer = self.layers[i]
-            quantized = layer.decode(indices) # * torch.cond(indices >= 0, lambda: 1, lambda: 0)
+            quantized = layer.decode(indices) * torch.cond(indices >= 0, lambda: one_tensor, lambda: zero_tensor)
             quantized_out = quantized_out + quantized
 
         if self.output_proj is not None:
