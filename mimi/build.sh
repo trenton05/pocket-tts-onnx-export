@@ -19,8 +19,8 @@ make -j8
 
 cd ..
 
-adb push build/mimi /data/mimi
-adb shell "export LD_LIBRARY_PATH=/data && /data/mimi"
+adb -s WT02082500015 push build/mimi /data/mimi
+adb -s WT02082500015 shell "export LD_LIBRARY_PATH=/data && /data/mimi"
 
 rm -f ./output.pcm
 rm -f ./output.wav
