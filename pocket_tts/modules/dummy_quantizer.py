@@ -147,8 +147,9 @@ class MimiResidualVectorQuantizer(nn.Module):
         codes = codes.transpose(0, 1)
         for i, indices in enumerate(codes):
             layer = self.layers[i]
-            quantized = layer.decode(indices)
-            quantized_out = quantized_out + quantized
+            if indices >= 0:
+                quantized = layer.decode(indices)
+                quantized_out = quantized_out + quantized
 
         if self.output_proj is not None:
             quantized_out = self.output_proj(quantized_out)
