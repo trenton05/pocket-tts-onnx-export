@@ -152,7 +152,7 @@ class MimiResidualVectorQuantizer(nn.Module):
         codes = codes.transpose(0, 1)
         for i, indices in enumerate(codes):
             layer = self.layers[i]
-            quantized = layer.decode(indices) * torch.cond(indices >= 0, 1, 0)
+            quantized = layer.decode(indices) * torch.cond(indices >= 0, lambda: 1, lambda: 0)
             quantized_out = quantized_out + quantized
 
         if self.output_proj is not None:
