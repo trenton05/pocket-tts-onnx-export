@@ -16,6 +16,11 @@ void get_tensors(Ort::Session& session, Ort::MemoryInfo& memory_info, std::vecto
         strcpy(buffer, name);
         input_node_names.emplace_back(buffer);
 
+        if (i == 0) {
+            input_tensors.emplace_back(Ort::Value());
+            continue;
+        }
+
         auto type = session.GetInputTypeInfo(i).GetTensorTypeAndShapeInfo();
         auto shape = type.GetShape();
         if (type.GetElementType() == ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL) {
@@ -46,6 +51,11 @@ void get_tensors(Ort::Session& session, Ort::MemoryInfo& memory_info, std::vecto
         allocated_buffers.push_back(buffer);
         strcpy(buffer, name);
         output_node_names.emplace_back(buffer);
+
+        if (i == 0) {
+            output_tensors.emplace_back(Ort::Value());
+            continue;
+        }
 
         auto type = session.GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo();
         auto shape = type.GetShape();
@@ -87,6 +97,7 @@ int main() {
     Ort::Session decoder(env, "/data/mimi_decoder.onnx", options);
     Ort::RunOptions run_options;
 
+    std::cout << "Mimi ONNX Runtime Created" << std::endl;
     std::ifstream pcm_stream("/data/music.pcm", std::ios::binary);
     if (!pcm_stream) {
         std::cerr << "Failed to open input.pcm file." << std::endl;
@@ -108,6 +119,7 @@ int main() {
     get_tensors(encoder, memory_info, allocated_buffers, encoder_tensors, encoder_inputs, encoder_output_tensors, encoder_outputs);
     get_tensors(decoder, memory_info, allocated_buffers, decoder_tensors, decoder_inputs, decoder_output_tensors, decoder_outputs);
 
+    std::cout << "Mimi ONNX Tensors Allocated" << std::endl;
     short pcm_data;
     float inputData[1920];
     int offset = 0;
@@ -125,12 +137,11 @@ int main() {
             offset = 0;
             auto start = std::chrono::system_clock::now();
 
-            memcpy(encoder_tensors[0].GetTensorMutableData<float>(), inputData, 1920 * sizeof(float));
             encoder_tensors[0] = Ort::Value::CreateTensor<float>(memory_info, inputData, 1920, encoder_shape, 3);
             encoder.Run(run_options, encoder_inputs.data(), encoder_tensors.data(), encoder_inputs.size(), encoder_outputs.data(), encoder_output_tensors.data(), encoder_output_tensors.size());
 
             int64_t* codes = (int64_t*) encoder_output_tensors[0].GetTensorData<int64_t>();
-            // std::cout << "Codes " << codes[0] << " " << codes[1] << " " << codes[2] << " " << codes[3] << " " << codes[4] << " " << codes[5] << " " << codes[6] << " " << codes[7] << std::endl;
+            std::cout << "Codes " << codes[0] << " " << codes[1] << " " << codes[2] << " " << codes[3] << " " << codes[4] << " " << codes[5] << " " << codes[6] << " " << codes[7] << std::endl;
             for (int i = 1; i < encoder_tensors.size(); i++) {
                 std::swap(encoder_tensors[i], encoder_output_tensors[i]);
             }
