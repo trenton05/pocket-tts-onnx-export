@@ -16,11 +16,6 @@ void get_tensors(Ort::Session& session, Ort::MemoryInfo& memory_info, std::vecto
         strcpy(buffer, name);
         input_node_names.emplace_back(buffer);
 
-        if (i == 0) {
-            input_tensors.emplace_back(Ort::Value());
-            continue;
-        }
-
         auto type = session.GetInputTypeInfo(i).GetTensorTypeAndShapeInfo();
         auto shape = type.GetShape();
         if (type.GetElementType() == ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL) {
@@ -51,11 +46,6 @@ void get_tensors(Ort::Session& session, Ort::MemoryInfo& memory_info, std::vecto
         allocated_buffers.push_back(buffer);
         strcpy(buffer, name);
         output_node_names.emplace_back(buffer);
-
-        if (i == 0) {
-            output_tensors.emplace_back(Ort::Value());
-            continue;
-        }
 
         auto type = session.GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo();
         auto shape = type.GetShape();
@@ -137,22 +127,25 @@ int main() {
             offset = 0;
             auto start = std::chrono::system_clock::now();
 
-            encoder_tensors[0] = Ort::Value::CreateTensor<float>(memory_info, inputData, 1920, encoder_shape, 3);
+            memcpy(encoder_tensors[0].GetTensorMutableData<float>(), inputData, 1920 * sizeof(float));
             encoder.Run(run_options, encoder_inputs.data(), encoder_tensors.data(), encoder_inputs.size(), encoder_outputs.data(), encoder_output_tensors.data(), encoder_output_tensors.size());
 
             int64_t* codes = (int64_t*) encoder_output_tensors[0].GetTensorData<int64_t>();
-            std::cout << "Codes " << codes[0] << " " << codes[1] << " " << codes[2] << " " << codes[3] << " " << codes[4] << " " << codes[5] << " " << codes[6] << " " << codes[7] << std::endl;
+            // std::cout << "Codes " << codes[0] << " " << codes[1] << " " << codes[2] << " " << codes[3] << " " << codes[4] << " " << codes[5] << " " << codes[6] << " " << codes[7] << std::endl;
             for (int i = 1; i < encoder_tensors.size(); i++) {
                 std::swap(encoder_tensors[i], encoder_output_tensors[i]);
             }
-            for (int i = 0; i < 8; i++) {
-                decoder_codes[i] = codes[i];
+            for (int i = 0; i < 32; i++) {
+                decoder_codes[i] = i < 6 ? codes[i] : 0;
             }
-            decoder_tensors[0] = Ort::Value::CreateTensor<int64_t>(memory_info, decoder_codes, 8, decoder_shape, 3);
+            memcpy(decoder_tensors[0].GetTensorMutableData<int64_t>(), decoder_codes, 32 * sizeof(int64_t));
+            
+            int64_t* mask = (int64_t*) decoder_tensors[1].GetTensorMutableData<int64_t>();
+            for (int i = 0; i < 32; i++) mask[i] = i < 6 ? 1 : 0;
             decoder.Run(run_options, decoder_inputs.data(), decoder_tensors.data(), decoder_inputs.size(), decoder_outputs.data(), decoder_output_tensors.data(), decoder_output_tensors.size());
 
-            for (int i = 1; i < decoder_tensors.size(); i++) {
-                std::swap(decoder_tensors[i], decoder_output_tensors[i]);
+            for (int i = 2; i < decoder_tensors.size(); i++) {
+                std::swap(decoder_tensors[i], decoder_output_tensors[i - 1]);
             }
 
             // std::cout << "Decoder output tensor shape: " << decoder_output_tensors[0].GetTensorTypeAndShapeInfo().GetElementCount() << " type: " << decoder_output_tensors[0].GetTensorTypeAndShapeInfo().GetElementType() << std::endl;

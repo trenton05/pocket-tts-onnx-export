@@ -322,7 +322,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     
     # Initialize state with static size sufficient for expected usage
     # 1000 tokens covers ~40s audio or long text prompts
-    STATIC_SEQ_LEN = 25
+    STATIC_SEQ_LEN = 50
     encoder_state = init_states(tts_model.mimi_encoder, batch_size=1, sequence_length=STATIC_SEQ_LEN)
     encoder_structure = get_state_structure(encoder_state)
     flat_encoder_state = flatten_state(encoder_state)
@@ -381,8 +381,8 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         decoder_structure,
     )
     
-    dummy_latent = torch.randint(0, 2048, (1, 32, 1))
-    mask = torch.ones(32, dtype=torch.int64)
+    dummy_latent = torch.randint(0, 2048, (1, 16, 1))
+    mask = torch.ones(16, dtype=torch.int64)
     mimi_args = (dummy_latent, mask, *flat_decoder_state)
     
     decoder_input_names = ["input", "mask"] + [f"in_state_{i}" for i in range(len(flat_decoder_state))]
@@ -418,7 +418,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         print("Verifying Mimi Encoder...")
         ort_encoder = ort.InferenceSession(encoder_path)
         
-        mimi_state = init_states(tts_model.mimi_encoder, batch_size=1, sequence_length=25)
+        mimi_state = init_states(tts_model.mimi_encoder, batch_size=1, sequence_length=50)
 
         flat_mimi_state = flatten_state(mimi_state)
         
@@ -464,12 +464,12 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         # ---------------------------------------------------------
         ort_session_mimi = ort.InferenceSession(decoder_path)
         
-        mimi_state = init_states(tts_model.mimi_decoder, batch_size=1, sequence_length=25)
+        mimi_state = init_states(tts_model.mimi_decoder, batch_size=1, sequence_length=50)
         flat_mimi_state = flatten_state(mimi_state)
         
-        latent = torch.randint(0, 2048, (1, 32, 1))
-        latent2 = torch.randint(0, 2048, (1, 32, 1))
-        mask = torch.ones(32, dtype=torch.int64)
+        latent = torch.randint(0, 2048, (1, 16, 1))
+        latent2 = torch.randint(0, 2048, (1, 16, 1))
+        mask = torch.ones(16, dtype=torch.int64)
         
         # PyTorch run
         mimi_wrapper = MimiWrapper(
