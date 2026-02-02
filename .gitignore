@@ -6,6 +6,7 @@ venv/
 
 # Large Weights (Download them via export.py)
 weights/
+build/
 
 # Exported Models
 onnx/
