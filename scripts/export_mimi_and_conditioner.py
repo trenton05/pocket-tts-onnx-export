@@ -354,8 +354,8 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         input_names=encoder_input_names,
         output_names=encoder_output_names,
         opset_version=18,
-        dynamic_shapes={"input": {2: "seq_len"}},
-        dynamo=True,
+        dynamic_axes={"input": {2: "seq_len"}},
+        dynamo=False,
         external_data=False
     )
     
@@ -395,8 +395,8 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
         input_names=decoder_input_names,
         output_names=decoder_output_names,
         opset_version=18,
-        dynamic_shapes={"input": {1: "codebooks"}},
-        dynamo=True,
+        dynamic_axes={"input": {1: "codebooks"}},
+        dynamo=False,
         external_data=False,
     )
     # onnx.save(float16.convert_float_to_float16(onnx.load(mimi_onnx_path), keep_io_types=True), os.path.join(output_dir, "mimi_decoder_fp16.onnx"))
