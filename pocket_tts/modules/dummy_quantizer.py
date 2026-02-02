@@ -101,6 +101,11 @@ class MimiVectorQuantization(nn.Module):
         quantize = quantize.permute(0, 2, 1)
         return quantize
 
+    def dummy(self, embed_ind):
+        quantize = self.codebook.dummy(embed_ind)
+        quantize = quantize.permute(0, 2, 1)
+        return quantize
+
 
 class MimiResidualVectorQuantizer(nn.Module):
     """Residual Vector Quantizer."""
@@ -147,7 +152,8 @@ class MimiResidualVectorQuantizer(nn.Module):
         codes = codes.transpose(0, 1)
         for i, indices in enumerate(codes):
             layer = self.layers[i]
-            quantized_out = torch.cond(indices >= 0, lambda: quantized_out + layer.decode(indices), lambda: quantized_out, (indices,))
+            quantized = layer.decode(indices) * torch.cond(indices >= 0, 1, 0)
+            quantized_out = quantized_out + quantized
 
         if self.output_proj is not None:
             quantized_out = self.output_proj(quantized_out)
