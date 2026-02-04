@@ -469,7 +469,7 @@ def verify_export(mimi_path, tts_model, output_dir="onnx_models"):
         
         latent = torch.randint(0, 2048, (1, 16, 1))
         latent2 = torch.randint(0, 2048, (1, 16, 1))
-        mask = torch.ones(16, dtype=torch.int64)
+        mask = torch.ones(16, dtype=torch.float32)
         
         # PyTorch run
         mimi_wrapper = MimiWrapper(
