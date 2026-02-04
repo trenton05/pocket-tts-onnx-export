@@ -88,7 +88,7 @@ int main() {
     Ort::RunOptions run_options;
 
     std::cout << "Mimi ONNX Runtime Created" << std::endl;
-    std::ifstream pcm_stream("/data/music.pcm", std::ios::binary);
+    std::ifstream pcm_stream("/data/readout.pcm", std::ios::binary);
     if (!pcm_stream) {
         std::cerr << "Failed to open input.pcm file." << std::endl;
         return -1;
@@ -118,6 +118,8 @@ int main() {
     int64_t decoder_codes[8];
     int max_elapsed = 0;
 
+    int quantizers = 8;
+
     std::vector<short> output;
     while (pcm_stream.read(reinterpret_cast<char*>(&pcm_data), sizeof(short))) {
         // little endian
@@ -136,12 +138,12 @@ int main() {
                 std::swap(encoder_tensors[i], encoder_output_tensors[i]);
             }
             for (int i = 0; i < 16; i++) {
-                decoder_codes[i] = i < 8 ? codes[i] : 0;
+                decoder_codes[i] = i < quantizers ? codes[i] : 0;
             }
             memcpy(decoder_tensors[0].GetTensorMutableData<int64_t>(), decoder_codes, 16 * sizeof(int64_t));
             
             int64_t* mask = (int64_t*) decoder_tensors[1].GetTensorMutableData<int64_t>();
-            for (int i = 0; i < 16; i++) mask[i] = i < 8 ? 1 : 0;
+            for (int i = 0; i < 16; i++) mask[i] = i < quantizers ? 1 : 0;
             decoder.Run(run_options, decoder_inputs.data(), decoder_tensors.data(), decoder_inputs.size(), decoder_outputs.data(), decoder_output_tensors.data(), decoder_output_tensors.size());
 
             for (int i = 2; i < decoder_tensors.size(); i++) {

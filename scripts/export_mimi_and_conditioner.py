@@ -382,7 +382,7 @@ def export_models(output_dir="onnx_models", weights_path="weights/model.safetens
     )
     
     dummy_latent = torch.randint(0, 2048, (1, 16, 1))
-    mask = torch.ones(16, dtype=torch.int64)
+    mask = torch.ones(16, dtype=torch.float32)
     mimi_args = (dummy_latent, mask, *flat_decoder_state)
     
     decoder_input_names = ["input", "mask"] + [f"in_state_{i}" for i in range(len(flat_decoder_state))]
